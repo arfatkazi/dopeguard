@@ -1,0 +1,17 @@
+# Ignore dependencies everywhere
+**/node_modules/
+
+# Ignore environment files
+**/.env
+**/.env.*
+
+# Ignore build outputs
+**/dist/
+**/build/
+
+# Ignore logs
+**/*.log
+
+# Ignore editor configs
+**/.vscode/
+**/.idea/

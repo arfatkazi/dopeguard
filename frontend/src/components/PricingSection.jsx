@@ -1,10 +1,12 @@
 import React from "react";
+import axios from "axios";
 import { motion } from "framer-motion";
 import { Check, Zap, Shield, Brain, Crown } from "lucide-react";
 
 export default function PricingSection() {
   const [currency, setCurrency] = React.useState("INR");
 
+  // 💱 Currency Converter
   const convertPrice = (priceINR) => {
     if (currency === "USD") {
       const usdValue = (parseInt(priceINR.replace("₹", "")) / 83).toFixed(2);
@@ -13,6 +15,27 @@ export default function PricingSection() {
     return priceINR;
   };
 
+  // 💳 Stripe Checkout Handler
+  const handleCheckout = async (planKey) => {
+    try {
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/subscription/create-session`,
+        { plan: planKey },
+        { withCredentials: true }
+      );
+
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe checkout
+      } else {
+        alert("⚠️ Unable to start checkout. Please try again.");
+      }
+    } catch (error) {
+      console.error("Stripe Checkout Error:", error);
+      alert("❌ Payment failed. Try again later.");
+    }
+  };
+
+  // 🧠 Plans
   const plans = [
     {
       icon: <Zap size={28} className="text-cyan-400" />,
@@ -21,6 +44,7 @@ export default function PricingSection() {
       desc: "Mindful dopamine tracking with core AI filters.",
       features: ["AI Image Filtering", "Focus Mode", "Basic Insights"],
       color: "from-cyan-500/30 to-blue-500/30",
+      planKey: "STARTER",
     },
     {
       icon: <Brain size={28} className="text-blue-400" />,
@@ -34,6 +58,7 @@ export default function PricingSection() {
         "Device Sync",
       ],
       color: "from-blue-500/30 to-indigo-500/30",
+      planKey: "FOCUS_PACK",
     },
     {
       icon: <Shield size={28} className="text-indigo-400" />,
@@ -47,6 +72,7 @@ export default function PricingSection() {
         "Smart Alerts",
       ],
       color: "from-indigo-500/30 to-purple-500/30",
+      planKey: "GROWTH",
     },
     {
       icon: <Crown size={28} className="text-purple-400" />,
@@ -60,6 +86,7 @@ export default function PricingSection() {
         "Priority Support",
       ],
       color: "from-purple-500/30 to-pink-500/30",
+      planKey: "ELITE",
       bestValue: true,
     },
   ];
@@ -166,6 +193,8 @@ export default function PricingSection() {
                     ? "0 0 25px rgba(168,85,247,0.4)"
                     : "0 0 10px rgba(255,255,255,0.1)",
                 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleCheckout(plan.planKey)}
                 className={`w-full py-2.5 rounded-xl font-semibold transition-all ${
                   plan.bestValue
                     ? "bg-gradient-to-r from-purple-400 to-pink-400 text-black"

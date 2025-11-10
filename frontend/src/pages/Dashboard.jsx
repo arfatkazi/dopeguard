@@ -1,15 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { motion } from "framer-motion";
 import { Shield, BarChart3, Zap, Crown, Settings } from "lucide-react";
 
 export default function Dashboard() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // 🧠 Fetch logged-in user details
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`,
+          { withCredentials: true }
+        );
+        setUser(data.user);
+      } catch (error) {
+        console.error("❌ Failed to fetch user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // 💳 Open Stripe Billing Portal
+  const handleManageBilling = async () => {
+    try {
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/subscription/billing-portal`,
+        { withCredentials: true }
+      );
+      if (data.url) window.location.href = data.url;
+    } catch (error) {
+      console.error("Billing portal error:", error);
+      alert("❌ Could not open billing portal. Try again later.");
+    }
+  };
+
   return (
     <main className="relative min-h-screen bg-[#050913] text-white pt-24 pb-20 overflow-hidden">
       {/* 🌌 Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 blur-[180px] opacity-60 pointer-events-none" />
 
       <section className="container relative z-10">
-        {/* Header */}
+        {/* 🧠 Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
@@ -18,7 +54,7 @@ export default function Dashboard() {
         >
           <Shield size={42} className="text-cyan-400 mx-auto mb-4" />
           <h2 className="text-4xl font-extrabold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            DopaGuard Dashboard
+            DopeGuard Dashboard
           </h2>
           <p className="text-white/70 mt-3">
             Welcome back,{" "}
@@ -28,7 +64,7 @@ export default function Dashboard() {
           </p>
         </motion.div>
 
-        {/* Main Dashboard Cards */}
+        {/* 🧩 Main Dashboard Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* 🧠 Focus Insights */}
           <motion.div
@@ -47,7 +83,6 @@ export default function Dashboard() {
               <span className="text-cyan-400 font-semibold">6h 22m</span>{" "}
               distraction-free.
             </p>
-            {/* Progress Bar */}
             <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 w-[75%] rounded-full" />
             </div>
@@ -75,7 +110,7 @@ export default function Dashboard() {
             </div>
             <p className="text-white/60 text-sm">
               Last scan blocked{" "}
-              <span className="text-cyan-400 font-medium">12 NSFW visuals</span>
+              <span className="text-cyan-400 font-medium">12 NSFW visuals</span>{" "}
               and{" "}
               <span className="text-cyan-400 font-medium">
                 3 dopamine triggers
@@ -84,7 +119,7 @@ export default function Dashboard() {
             </p>
           </motion.div>
 
-          {/* 💎 Subscription */}
+          {/* 💎 Subscription Card */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
@@ -94,18 +129,48 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-white">Subscription</h3>
               <Crown size={20} className="text-yellow-400" />
             </div>
-            <p className="text-white/70">
-              Plan: <span className="text-cyan-400 font-medium">Focus Pro</span>
-            </p>
-            <p className="text-white/70 mb-4">
-              Next Renewal: <span className="text-white">Dec 15, 2025</span>
-            </p>
-            <button className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold transition-all">
-              Manage Plan
-            </button>
+
+            {loading ? (
+              <p className="text-white/60">Loading plan...</p>
+            ) : user ? (
+              <>
+                <p className="text-white/70">
+                  Plan:{" "}
+                  <span
+                    className={`font-medium ${
+                      user.plan === "ELITE"
+                        ? "text-yellow-400"
+                        : user.plan === "GROWTH"
+                        ? "text-purple-400"
+                        : user.plan === "FOCUS_PACK"
+                        ? "text-cyan-400"
+                        : "text-white/60"
+                    }`}
+                  >
+                    {user.plan}
+                  </span>
+                </p>
+                <p className="text-white/70 mb-4">
+                  Expiry:{" "}
+                  <span className="text-white">
+                    {user.planExpiry
+                      ? new Date(user.planExpiry).toLocaleDateString()
+                      : "N/A"}
+                  </span>
+                </p>
+                <button
+                  onClick={handleManageBilling}
+                  className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold transition-all"
+                >
+                  Manage Plan
+                </button>
+              </>
+            ) : (
+              <p className="text-white/60">No user data found</p>
+            )}
           </motion.div>
 
-          {/* 📈 Focus Trend (future analytics card) */}
+          {/* 📈 Focus Trend (Beta) */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
@@ -128,9 +193,9 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Footer note */}
+      {/* 🧾 Footer */}
       <div className="text-center text-white/40 text-sm mt-12">
-        © {new Date().getFullYear()} DopaGuard — Stay Clean. Stay Focused.
+        © {new Date().getFullYear()} DopeGuard — Stay Clean. Stay Focused.
       </div>
     </main>
   );

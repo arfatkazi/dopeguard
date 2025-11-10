@@ -1,0 +1,57 @@
+{
+  "name": "dopeguard-backend",
+  "version": "1.0.0",
+  "description": "AI-powered backend for DopeGuard — NSFW blocking, focus tracking, subscription management, and Arcjet-secured API.",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "inspect": "arcjet inspect"
+  },
+  "dependencies": {
+    "@arcjet/inspect": "^1.0.0-beta.14",
+    "@arcjet/node": "^1.0.0-beta.14",
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.19",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.3",
+    "morgan": "^1.10.1",
+    "nodemailer": "^7.0.10",
+    "stripe": "^19.3.0",
+    "uuid": "^13.0.0",
+    "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "DopeGuard",
+    "AI Focus Shield",
+    "NSFW blocker",
+    "Arcjet",
+    "Node.js",
+    "Express",
+    "Stripe",
+    "Mongoose"
+  ],
+  "author": "Arfat Kazi",
+  "license": "MIT"
+}
