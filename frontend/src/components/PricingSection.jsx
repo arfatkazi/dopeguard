@@ -4,38 +4,121 @@ import { motion } from "framer-motion";
 import { Check, Zap, Shield, Brain, Crown } from "lucide-react";
 
 export default function PricingSection() {
-  const [currency, setCurrency] = React.useState("INR");
+  // ✅ Locked currency (INR only)
+  const currency = "INR";
 
-  // 💱 Currency Converter
-  const convertPrice = (priceINR) => {
-    if (currency === "USD") {
-      const usdValue = (parseInt(priceINR.replace("₹", "")) / 83).toFixed(2);
-      return `$${usdValue}`;
-    }
-    return priceINR;
-  };
+  // 💱 Price Display Helper
+  const formatPrice = (priceINR) => priceINR;
 
-  // 💳 Stripe Checkout Handler
-  const handleCheckout = async (planKey) => {
+  // 🔒 Global flag to prevent duplicate verification
+  let paymentVerified = false;
+
+  // 💳 Razorpay Checkout Handler
+  const handlePayment = async (planKey) => {
     try {
+      if (paymentVerified) {
+        console.log("⚠️ Duplicate payment attempt blocked.");
+        return;
+      }
+
+      console.log("🧠 Starting payment for plan:", planKey);
+
+      // 1️⃣ Create Order on Backend
       const { data } = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/subscription/create-session`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/payment/create-order`,
         { plan: planKey },
         { withCredentials: true }
       );
 
-      if (data.url) {
-        window.location.href = data.url; // Redirect to Stripe checkout
-      } else {
-        alert("⚠️ Unable to start checkout. Please try again.");
+      console.log("📦 Order created:", data);
+
+      if (!data.success || !data.order) {
+        alert("❌ Failed to start payment. Please try again.");
+        return;
       }
+
+      // 2️⃣ Configure Razorpay Checkout
+      const options = {
+        key: data.key_id,
+        amount: data.order.amount,
+        currency: currency, // ✅ Now properly using the variable
+        name: "DopeGuard",
+        description: `${planKey} Subscription`,
+        order_id: data.order.id,
+        theme: { color: "#00BFFF" },
+        prefill: {
+          name: "Focus User",
+          email: "user@example.com",
+        },
+
+        // ✅ 3️⃣ On Payment Success
+        handler: async (response) => {
+          if (paymentVerified) {
+            console.log("⚠️ Duplicate verification prevented.");
+            return;
+          }
+          paymentVerified = true;
+
+          console.log("🧾 Payment response:", response);
+
+          const payload = {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            plan: planKey,
+          };
+
+          if (!payload.razorpay_payment_id || !payload.razorpay_signature) {
+            console.error("❌ Missing fields in Razorpay response:", payload);
+            alert("Payment response incomplete. Please retry.");
+            return;
+          }
+
+          console.log("📤 Verifying payment with payload:", payload);
+
+          try {
+            const verify = await axios.post(
+              `${import.meta.env.VITE_BACKEND_URL}/api/payment/verify-payment`,
+              payload,
+              { withCredentials: true }
+            );
+
+            console.log("✅ Verification response:", verify.data);
+
+            if (verify.data.success) {
+              localStorage.setItem("plan", planKey);
+              localStorage.setItem("order_id", payload.razorpay_order_id);
+              localStorage.setItem("amount", data.order.amount);
+
+              window.location.href = `/success?plan=${planKey}&order_id=${payload.razorpay_order_id}&amount=${data.order.amount}`;
+            } else {
+              alert("⚠️ Payment verification failed: " + verify.data.message);
+              window.location.href = "/payment-failed";
+            }
+          } catch (err) {
+            console.error("❌ Verification error:", err);
+            alert("Server error during verification. Try again later.");
+            window.location.href = "/payment-failed";
+          }
+        },
+      };
+
+      // 4️⃣ Failure Event Handler
+      const razor = new window.Razorpay(options);
+      razor.on("payment.failed", (res) => {
+        console.error("💥 Payment failed:", res.error);
+        alert("❌ Payment failed. Please try again.");
+        window.location.href = "/payment-failed";
+      });
+
+      razor.open();
     } catch (error) {
-      console.error("Stripe Checkout Error:", error);
-      alert("❌ Payment failed. Try again later.");
+      console.error("💥 Payment error:", error);
+      alert("⚠️ Something went wrong. Please try again.");
     }
   };
 
-  // 🧠 Plans
+  // 🧩 Pricing Plans
   const plans = [
     {
       icon: <Zap size={28} className="text-cyan-400" />,
@@ -96,17 +179,7 @@ export default function PricingSection() {
       {/* 🌌 Background Aura */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
 
-      {/* 💱 Currency Toggle */}
-      <div className="absolute top-6 right-10 z-20">
-        <button
-          onClick={() => setCurrency(currency === "INR" ? "USD" : "INR")}
-          className="bg-white/10 hover:bg-white/20 text-white/80 text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm transition-all"
-        >
-          Switch to {currency === "INR" ? "USD" : "INR"}
-        </button>
-      </div>
-
-      {/* 🧠 Section Title */}
+      {/* 🧠 Section Header */}
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -150,14 +223,12 @@ export default function PricingSection() {
                   : ""
               }`}
             >
-              {/* ⭐ Best Value Badge */}
               {plan.bestValue && (
                 <div className="absolute top-3 right-3 bg-gradient-to-r from-purple-500 to-pink-500 text-xs font-semibold text-white px-3 py-1 rounded-full shadow-md">
                   Best Value
                 </div>
               )}
 
-              {/* Icon + Title */}
               <div className="flex items-center gap-3 mb-3">
                 {plan.icon}
                 <h3 className="text-lg font-semibold text-white">
@@ -165,15 +236,12 @@ export default function PricingSection() {
                 </h3>
               </div>
 
-              {/* Description */}
               <p className="text-white/60 text-sm mb-4">{plan.desc}</p>
 
-              {/* Price */}
               <h4 className="text-3xl font-extrabold text-cyan-400 mb-6">
-                {convertPrice(plan.price)}
+                {formatPrice(plan.price)}
               </h4>
 
-              {/* Features */}
               <ul className="space-y-2 mb-8">
                 {plan.features.map((f, idx) => (
                   <li
@@ -185,7 +253,6 @@ export default function PricingSection() {
                 ))}
               </ul>
 
-              {/* CTA Button */}
               <motion.button
                 whileHover={{
                   scale: 1.03,
@@ -194,7 +261,7 @@ export default function PricingSection() {
                     : "0 0 10px rgba(255,255,255,0.1)",
                 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => handleCheckout(plan.planKey)}
+                onClick={() => handlePayment(plan.planKey)}
                 className={`w-full py-2.5 rounded-xl font-semibold transition-all ${
                   plan.bestValue
                     ? "bg-gradient-to-r from-purple-400 to-pink-400 text-black"
@@ -207,20 +274,6 @@ export default function PricingSection() {
           </motion.div>
         ))}
       </div>
-
-      {/* 🌈 Floating Glow */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 w-[1000px] h-[1000px] bg-gradient-to-r from-cyan-400/10 via-blue-500/10 to-purple-500/10 rounded-full blur-[200px] opacity-30 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-        animate={{
-          scale: [1, 1.05, 1],
-          opacity: [0.2, 0.5, 0.2],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          repeatType: "mirror",
-        }}
-      />
     </section>
   );
 }

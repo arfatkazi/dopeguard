@@ -1,3 +1,7 @@
+// =============================================================
+// 🧠 DopeGuard Backend Server — Razorpay + Arcjet + Security Layer
+// =============================================================
+
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -10,26 +14,36 @@ import rateLimit from "express-rate-limit";
 import { isSpoofedBot } from "@arcjet/inspect";
 import arcjet, { shield, detectBot, tokenBucket } from "@arcjet/node";
 import connectDB from "../config/db.js";
-import subscriptionRoutes from "../routes/subscriptionRoutes.js";
 
-// ✅ Import your route files (uncomment once created)
-// import authRoutes from "./routes/authRoutes.js";
-// import contactRoutes from "./routes/contactRoutes.js";
-// import subscriptionRoutes from "./routes/subscriptionRoutes.js";
-// import extensionRoutes from "./routes/extensionRoutes.js";
-
+// ✅ Load environment variables first
 dotenv.config();
+
+// ✅ Connect MongoDB
 connectDB();
-/* ----------------------------
-📡 Setup and Initialization
----------------------------- */
+
+// ✅ Import Routes
+import paymentRoutes from "../routes/paymentRoutes.js";
+import authRoutes from "../routes/authRoutes.js";
+
+// ✅ Initialize Express App
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
 /* ----------------------------
-🌍 Security & Utility Middleware
+🌍 CORS Configuration (Fixed)
 ---------------------------- */
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", // ✅ Only your frontend domain
+    credentials: true, // ✅ Required for cookies/auth headers
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+/* ----------------------------
+🧩 General Middleware
+---------------------------- */
 app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: "10mb" }));
@@ -37,83 +51,74 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 /* ----------------------------
-🧠 Arcjet — API Abuse & Bot Protection
+🧠 Arcjet — Bot & Abuse Protection
 ---------------------------- */
-const aj = arcjet({
-  key: process.env.ARCJET_KEY,
-  rules: [
-    // 🛡️ Shield (SQLi, XSS, command injection, etc.)
-    shield({ mode: "LIVE" }),
+// const aj = arcjet({
+//   key: process.env.ARCJET_KEY,
+//   rules: [
+//     // 🛡️ Block injection, SQLi, XSS, etc.
+//     shield({ mode: "LIVE" }),
 
-    // 🤖 Bot Detection
-    detectBot({
-      mode: "LIVE",
-      allow: [
-        "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc.
-        // Optional:
-        // "CATEGORY:MONITOR",
-        // "CATEGORY:PREVIEW",
-      ],
-    }),
+//     // 🤖 Detect bots, allow search engines
+//     detectBot({
+//       mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
+//       allow: [
+//         "CATEGORY:SEARCH_ENGINE",
+//         "CATEGORY:HTTP_LIBRARY", // allows Postman, axios, curl, etc.
+//         "LOCALHOST",
+//       ],
+//     }),
 
-    // ⏳ Rate Limiting — token bucket algorithm
-    tokenBucket({
-      mode: "LIVE",
-      refillRate: 5, // 5 tokens every interval
-      interval: 10, // 10 seconds
-      capacity: 10, // max 10 tokens
-    }),
-  ],
-});
+//     // ⏳ Token bucket rate limiting
+//     tokenBucket({
+//       mode: "LIVE",
+//       refillRate: 5,
+//       interval: 10,
+//       capacity: 10,
+//     }),
+//   ],
+// });
+
+// 🔐 Arcjet Protection Middleware
+// app.use(async (req, res, next) => {
+//   try {
+//     const decision = await aj.protect(req, { requested: 1 });
+
+//     if (decision.isDenied()) {
+//       if (decision.reason.isRateLimit())
+//         return res.status(429).json({ error: "Too Many Requests" });
+//       if (decision.reason.isBot())
+//         return res.status(403).json({ error: "No bots allowed" });
+//       return res.status(403).json({ error: "Forbidden" });
+//     }
+
+//     if (decision.ip?.isHosting() || decision.results.some(isSpoofedBot)) {
+//       return res.status(403).json({ error: "Forbidden" });
+//     }
+
+//     next();
+//   } catch (err) {
+//     console.error("Arcjet error:", err);
+//     next();
+//   }
+// });
 
 /* ----------------------------
-🔐 Arcjet Protection Middleware
+🛡️ Express Rate Limiter
 ---------------------------- */
-app.use(async (req, res, next) => {
-  try {
-    const decision = await aj.protect(req, { requested: 1 });
-
-    if (decision.isDenied()) {
-      if (decision.reason.isRateLimit()) {
-        return res.status(429).json({ error: "Too Many Requests" });
-      } else if (decision.reason.isBot()) {
-        return res.status(403).json({ error: "No bots allowed" });
-      } else {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
-
-    if (decision.ip?.isHosting() || decision.results.some(isSpoofedBot)) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-
-    next();
-  } catch (err) {
-    console.error("Arcjet error:", err);
-    next();
-  }
-});
-
-/* ----------------------------
-🛡️ Express Rate Limiter (Extra Layer)
----------------------------- */
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: 60 * 1000, // 1 minute
+//   max: 100, // Max requests per IP
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
+// app.use(limiter);
 
 /* ----------------------------
 📁 API Routes
 ---------------------------- */
-// app.use("/api/auth", authRoutes);
-// app.use("/api/contact", contactRoutes);
-// app.use("/api/subscription", subscriptionRoutes);
-// app.use("/api/extension", extensionRoutes);
-app.use("/api/subscription/webhook", express.raw({ type: "application/json" }));
-app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/payment", paymentRoutes);
 
 /* ----------------------------
 ❤️ Health Check Route
@@ -121,12 +126,13 @@ app.use("/api/subscription", subscriptionRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "🧠 DopeGuard backend running securely with Arcjet ⚡",
+    message:
+      "🧠 DopeGuard backend running securely with Arcjet ⚡ & Razorpay 💳",
   });
 });
 
 /* ----------------------------
-❌ Error Handler
+❌ Global Error Handler
 ---------------------------- */
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err);
@@ -137,9 +143,10 @@ app.use((err, req, res, next) => {
 });
 
 /* ----------------------------
-🚀 Server Start
+🚀 Start Server
 ---------------------------- */
 app.listen(PORT, () => {
   console.log(`⚙️  DopeGuard API running at: http://localhost:${PORT}`);
-  console.log(`server is running successfully ✅`);
+  console.log("✅ Server started successfully with Arcjet + Razorpay");
+  console.log("🌍 Allowed Origin:", process.env.FRONTEND_URL);
 });

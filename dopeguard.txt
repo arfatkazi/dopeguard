@@ -68,3 +68,14 @@ DopeGuard/
         ↑                      ↑
         │                      │
    [ DopeGuard Extension ] ----┘
+
+
+
+
+
+{
+  "Registered Name": "Razorpay Software Limited",
+  "CIN": "U72200KA2013PLC097389",
+  "PAN": "AAGCR4375J",
+  "TAN": "BLRR14773D"
+}

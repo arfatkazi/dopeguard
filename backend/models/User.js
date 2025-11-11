@@ -65,9 +65,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ Index email for performance
-userSchema.index({ email: 1 });
-
 // 🔒 Auto-hash password before save
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();

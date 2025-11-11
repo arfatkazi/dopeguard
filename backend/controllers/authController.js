@@ -1,9 +1,6 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // 🧍 Register User
 export const registerUser = async (req, res) => {
@@ -23,21 +20,19 @@ export const registerUser = async (req, res) => {
         .json({ success: false, message: "User already exists" });
     }
 
-    // ✅ Create new Stripe customer on registration
-    const stripeCustomer = await stripe.customers.create({
-      email,
-      name,
-      description: `DopeGuard user - ${name}`,
-    });
+    // ✅ Hash password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ✅ Create user in MongoDB and link Stripe Customer
+    // ✅ Create user (no Stripe needed)
     const user = await User.create({
       name,
       email,
-      password,
-      stripeCustomerId: stripeCustomer.id,
+      password: hashedPassword,
+      plan: "STARTER",
     });
 
+    // ✅ Generate JWT token
     const token = generateToken(user);
 
     // ✅ Send cookie and response
@@ -46,7 +41,7 @@ export const registerUser = async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(201)
       .json({
@@ -58,7 +53,6 @@ export const registerUser = async (req, res) => {
           name: user.name,
           email: user.email,
           plan: user.plan,
-          stripeCustomerId: user.stripeCustomerId,
         },
       });
   } catch (error) {
@@ -71,20 +65,18 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
 
-    if (!user) {
+    const user = await User.findOne({ email });
+    if (!user)
       return res
         .status(400)
         .json({ success: false, message: "Invalid email or password" });
-    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (!isMatch)
       return res
         .status(400)
         .json({ success: false, message: "Invalid email or password" });
-    }
 
     // ✅ Auto downgrade expired plan (optional)
     if (user.planExpiry && new Date() > user.planExpiry) {
@@ -113,7 +105,6 @@ export const loginUser = async (req, res) => {
           name: user.name,
           email: user.email,
           plan: user.plan,
-          stripeCustomerId: user.stripeCustomerId,
         },
       });
   } catch (error) {
@@ -126,11 +117,10 @@ export const loginUser = async (req, res) => {
 export const verifyToken = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    if (!user) {
+    if (!user)
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
-    }
 
     res.json({ success: true, user });
   } catch (error) {

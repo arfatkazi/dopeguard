@@ -5,14 +5,14 @@ import Lenis from "lenis";
 
 import "./App.css";
 import "./index.css";
-
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
+import PaymentFailed from "./pages/PaymentFailed";
+import Success from "./pages/Success"; // ✅ ADD THIS LINE
 
 /* ⚙️ Neural Boot Loader */
 function Loader() {
@@ -104,6 +104,8 @@ export default function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/payment-failed" element={<PaymentFailed />} />
+            <Route path="/success" element={<Success />} /> {/* ✅ Added */}
           </Routes>
         </motion.main>
       </AnimatePresence>
