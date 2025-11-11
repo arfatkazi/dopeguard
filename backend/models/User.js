@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
+    // 👤 Basic User Info
     name: { type: String, required: true, trim: true },
     email: {
       type: String,
@@ -13,35 +14,34 @@ const userSchema = new mongoose.Schema(
     },
     password: { type: String, required: true, minlength: 6 },
 
-    // 🌍 Stripe + Subscription Fields
+    // 💳 Subscription / Payment (Razorpay)
     plan: {
       type: String,
       enum: ["STARTER", "FOCUS_PACK", "GROWTH", "ELITE"],
       default: "STARTER",
     },
-    planDuration: {
-      type: Number, // in days
-      default: 30,
-    },
-    planPrice: {
-      type: Number,
-      default: 199,
-    },
-    planExpiry: {
-      type: Date, // calculated based on purchase
-    },
-    stripeCustomerId: {
+    planPrice: { type: Number, default: 199 },
+    planExpiry: { type: Date },
+    subscriptionStatus: {
       type: String,
+      enum: ["active", "expired", "canceled"],
+      default: "expired",
     },
-    stripeSubscriptionId: {
-      type: String,
-    },
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpaySignature: String,
 
+    // 🌍 (Keep Stripe fields commented — optional future)
+    // stripeCustomerId: String,
+    // stripeSubscriptionId: String,
+
+    // 🔗 Reference to Subscription collection (optional)
     subscriptionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",
     },
 
+    // 🧠 Feature Flags
     features: {
       betaAccess: { type: Boolean, default: false },
       focusMode: { type: Boolean, default: false },
@@ -49,6 +49,7 @@ const userSchema = new mongoose.Schema(
       alertsEnabled: { type: Boolean, default: true },
     },
 
+    // 💻 Device Tracking
     devices: [
       {
         deviceId: String,
@@ -58,6 +59,7 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
+    // 🕒 Other metadata
     lastLogin: Date,
     resetToken: String,
     resetTokenExpiry: Date,
@@ -65,14 +67,14 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🔒 Auto-hash password before save
+// 🔒 Hash password before save
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// 🧩 Compare Passwords
+// 🔑 Compare password method
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };

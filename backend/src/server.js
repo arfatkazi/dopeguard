@@ -53,66 +53,66 @@ app.use(morgan("dev"));
 /* ----------------------------
 🧠 Arcjet — Bot & Abuse Protection
 ---------------------------- */
-// const aj = arcjet({
-//   key: process.env.ARCJET_KEY,
-//   rules: [
-//     // 🛡️ Block injection, SQLi, XSS, etc.
-//     shield({ mode: "LIVE" }),
+const aj = arcjet({
+  key: process.env.ARCJET_KEY,
+  rules: [
+    // 🛡️ Block injection, SQLi, XSS, etc.
+    shield({ mode: "LIVE" }),
 
-//     // 🤖 Detect bots, allow search engines
-//     detectBot({
-//       mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
-//       allow: [
-//         "CATEGORY:SEARCH_ENGINE",
-//         "CATEGORY:HTTP_LIBRARY", // allows Postman, axios, curl, etc.
-//         "LOCALHOST",
-//       ],
-//     }),
+    // 🤖 Detect bots, allow search engines
+    detectBot({
+      mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
+      allow: [
+        "CATEGORY:SEARCH_ENGINE",
+        "CATEGORY:HTTP_LIBRARY", // allows Postman, axios, curl, etc.
+        "LOCALHOST",
+      ],
+    }),
 
-//     // ⏳ Token bucket rate limiting
-//     tokenBucket({
-//       mode: "LIVE",
-//       refillRate: 5,
-//       interval: 10,
-//       capacity: 10,
-//     }),
-//   ],
-// });
+    // ⏳ Token bucket rate limiting
+    tokenBucket({
+      mode: "LIVE",
+      refillRate: 5,
+      interval: 10,
+      capacity: 10,
+    }),
+  ],
+});
 
 // 🔐 Arcjet Protection Middleware
-// app.use(async (req, res, next) => {
-//   try {
-//     const decision = await aj.protect(req, { requested: 1 });
+app.use(async (req, res, next) => {
+  try {
+    const decision = await aj.protect(req, { requested: 1 });
 
-//     if (decision.isDenied()) {
-//       if (decision.reason.isRateLimit())
-//         return res.status(429).json({ error: "Too Many Requests" });
-//       if (decision.reason.isBot())
-//         return res.status(403).json({ error: "No bots allowed" });
-//       return res.status(403).json({ error: "Forbidden" });
-//     }
+    if (decision.isDenied()) {
+      if (decision.reason.isRateLimit())
+        return res.status(429).json({ error: "Too Many Requests" });
+      if (decision.reason.isBot())
+        return res.status(403).json({ error: "No bots allowed" });
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
-//     if (decision.ip?.isHosting() || decision.results.some(isSpoofedBot)) {
-//       return res.status(403).json({ error: "Forbidden" });
-//     }
+    if (decision.ip?.isHosting() || decision.results.some(isSpoofedBot)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
-//     next();
-//   } catch (err) {
-//     console.error("Arcjet error:", err);
-//     next();
-//   }
-// });
+    next();
+  } catch (err) {
+    console.error("Arcjet error:", err);
+    next();
+  }
+});
 
 /* ----------------------------
 🛡️ Express Rate Limiter
 ---------------------------- */
-// const limiter = rateLimit({
-//   windowMs: 60 * 1000, // 1 minute
-//   max: 100, // Max requests per IP
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-// app.use(limiter);
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // Max requests per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 /* ----------------------------
 📁 API Routes
