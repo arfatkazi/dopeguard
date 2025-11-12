@@ -140,9 +140,15 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <span className="text-white/80 font-medium">
-                  👋 Hi, {user.name.split(" ")[0]}
+                <span className="relative text-white font-semibold bg-gradient-to-r from-[#00FFD1]/20 via-[#00B4D8]/10 to-[#0077FF]/20 border border-[#00E0FF]/30 px-5 py-2 rounded-xl backdrop-blur-md shadow-[0_0_15px_rgba(0,255,209,0.2)] hover:shadow-[0_0_25px_rgba(0,255,209,0.5)] hover:border-[#00E0FF]/60 transition-all duration-500">
+                  <span className="text-[#00E0FF] font-bold tracking-wide">
+                    Welcome&nbsp;
+                  </span>
+                  <span className="text-white/90">
+                    {user?.name?.split(" ")[0] || "User"}
+                  </span>
                 </span>
+
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-white/90 hover:bg-white/5 transition"
