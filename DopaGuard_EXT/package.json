@@ -1,0 +1,15 @@
+{
+  "name": "dopa_guard_ext",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DopaGuard AI Shield Chrome/Brave Extension — Blocks NSFW sites and images.",
+  "scripts": {
+    "build": "build.bat",
+    "verify": "node verify_build.mjs"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "esbuild": "^0.25.12",
+    "nsfwjs": "^4.2.1"
+  }
+}
