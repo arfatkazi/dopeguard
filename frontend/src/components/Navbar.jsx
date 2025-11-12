@@ -1,15 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Shield, User, ShoppingCart } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, Shield, User, ShoppingCart, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import AuthModal from "./AuthModal";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // 🧠 Load user from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) setUser(JSON.parse(stored));
+  }, []);
 
   // Fade in sync with loader
   useEffect(() => {
@@ -26,6 +35,21 @@ export default function Navbar() {
 
   // Close mobile menu when route changes
   useEffect(() => setOpen(false), [location.pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+      localStorage.removeItem("user");
+      setUser(null);
+      navigate("/");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
 
   if (!visible) return null;
 
@@ -99,19 +123,34 @@ export default function Navbar() {
 
           {/* 💎 Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => setShowAuth(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-white/90 hover:bg-white/5 transition"
-            >
-              <User size={16} /> Sign in
-            </button>
-
-            <Link
-              to="/pricing"
-              className="ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold shadow-md hover:shadow-cyan-400/40 hover:scale-[1.04] transition-transform"
-            >
-              <ShoppingCart size={16} /> Get Focused
-            </Link>
+            {!user ? (
+              <>
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-white/90 hover:bg-white/5 transition"
+                >
+                  <User size={16} /> Sign In
+                </button>
+                <Link
+                  to="/pricing"
+                  className="ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold shadow-md hover:shadow-cyan-400/40 hover:scale-[1.04] transition-transform"
+                >
+                  <ShoppingCart size={16} /> Get Focused
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="text-white/80 font-medium">
+                  👋 Hi, {user.name.split(" ")[0]}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-white/90 hover:bg-white/5 transition"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              </>
+            )}
           </div>
 
           {/* 📱 Mobile Menu Button */}
@@ -141,14 +180,14 @@ export default function Navbar() {
               <div className="flex items-center justify-between mb-6">
                 <Link
                   to="/"
-                  className="flex items-center gap-3"
                   onClick={() => setOpen(false)}
+                  className="flex items-center gap-3"
                 >
                   <div className="p-2 rounded-md bg-white/10">
                     <Shield size={18} className="text-cyan-400" />
                   </div>
                   <div>
-                    <div className="font-bold text-white">DopaGuard</div>
+                    <div className="font-bold text-white">DopeGuard</div>
                     <div className="text-xs text-white/60">AI Shield</div>
                   </div>
                 </Link>
@@ -180,23 +219,37 @@ export default function Navbar() {
 
               {/* Buttons */}
               <div className="mt-6 border-t border-white/10 pt-5 flex flex-col gap-3">
-                <button
-                  onClick={() => {
-                    setShowAuth(true);
-                    setOpen(false);
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition"
-                >
-                  <User size={16} /> Sign In
-                </button>
+                {!user ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowAuth(true);
+                        setOpen(false);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition"
+                    >
+                      <User size={16} /> Sign In
+                    </button>
 
-                <Link
-                  to="/pricing"
-                  onClick={() => setOpen(false)}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold hover:scale-[1.03] transition-transform"
-                >
-                  Get Focused — ₹99
-                </Link>
+                    <Link
+                      to="/pricing"
+                      onClick={() => setOpen(false)}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold hover:scale-[1.03] transition-transform"
+                    >
+                      Get Focused — ₹199
+                    </Link>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setOpen(false);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition"
+                  >
+                    <LogOut size={16} /> Logout
+                  </button>
+                )}
               </div>
 
               <div className="mt-5 text-xs text-white/50 text-center">

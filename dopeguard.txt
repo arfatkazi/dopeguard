@@ -79,3 +79,72 @@ DopeGuard/
   "PAN": "AAGCR4375J",
   "TAN": "BLRR14773D"
 }
+
+
+1️⃣ User creates account / logs in (React → /api/auth/login)
+2️⃣ Authenticated user chooses plan → payment (Razorpay)
+3️⃣ Payment verified → MongoDB updates (plan active, expiry date)
+4️⃣ Success page → shows confirmation + expiry
+5️⃣ User downloads DopeGuard extension
+6️⃣ Extension logs in with same credentials (JWT)
+7️⃣ Extension fetches /api/auth/verify → checks plan
+8️⃣ AI content blocking enabled based on plan level
+
+
+
+
+Perfect. You’re at a major milestone with DopeGuard, bro.
+Let’s do this step-by-step, clean and in-depth — you’ll get a complete roadmap showing:
+
+1️⃣ What’s ✅ completed and production-ready
+2️⃣ What’s ⚙️ partially done
+3️⃣ What’s 🧩 remaining (with reset-password & email system included)
+4️⃣ Exactly how to connect your extension ↔ backend securely and make it powerful + premium-controlled
+
+🧭 DOPEGUARD PROGRESS — DEEP STATUS MAP
+Layer	Feature	Status	Explanation
+Backend	            User Registration (JWT + bcrypt)	✅ Done	Perfectly working with secure hashing and token-based auth
+	                  Login	✅ Done	Tested successfully, returns cookie
+	                  Logout	✅ Done	Clears token
+	                  JWT Verification	✅ Done	/api/auth/verify returns user info
+	                  Razorpay Integration	✅ Done	Payments + order creation + signature verification
+	                  Database Update on Payment	✅ Done	Plan, expiry, subscriptionStatus stored
+	                  MongoDB Schema	✅ Done	User.js includes all essential fields
+	                  CORS + Cookie Flow	✅ Done	Works between 127.0.0.1:5000 ↔ 127.0.0.1:5173
+	                  Email System (Nodemailer)	⚙️ Pending	Needed for Forgot/Reset Password
+	                  Forgot Password API	⚙️ Pending	To send reset email with token
+	                  Reset Password API	⚙️ Pending	To handle actual password reset
+	                  Security Middleware (Arcjet)	✅ Done	Already integrated
+
+
+Frontend (React)	  Register/Login	✅ Done	Auth tested end-to-end
+	                  Payment & Success Page	✅ Done	Payment + DB update confirmed
+	                  Token-based Auth Handling	✅ Done	Working with cookies
+	                  Forgot Password Form	⚙️ Pending	Add page + connect to backend
+	                  Success Page UI polish	⚙️ Pending	Add plan + expiry details
+
+
+
+Extension	          Manifest + File Structure	✅ Done	Clean folder setup
+	                  NSFW Blocking Engine (AI)	✅ Done	Advanced and stable
+	                  Keyword + Domain Filter	✅ Done	Massive coverage
+	                  Popup UI (Login/Logout)	⚙️ Pending	Needs login + verify integration
+	                  JWT Handling (chrome.storage)	⚙️ Pending	Store token locally
+	                  Backend Plan Verification	⚙️ Pending	Call /api/auth/verify
+	                  Plan-based Shield	⚙️ Pending	Disable if plan expired
+	                  Sync Devices (future)	🔜 Later	Track device usage
+	                  AI Blocking Customization by Plan	🔜 Later	Change blocking modes based on plan
+
+                    
+✅ WHAT’S FULLY COMPLETE (as of now)
+
+✅ Authentication System
+✅ Razorpay Payment Integration
+✅ MongoDB + Schema Updates
+✅ CORS + Secure Cookie System
+✅ JWT Generation + Verification
+✅ AI NSFW Blocking Engine (frontend extension logic)
+✅ Base Folder Architecture (backend + frontend + extension)
+
+Your system authenticates, processes payments, and saves active plans perfectly.
+That’s your foundation — the most complex part is done.

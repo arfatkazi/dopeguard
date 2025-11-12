@@ -1,47 +1,67 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+// Define Mongoose schema for the User
 const userSchema = new mongoose.Schema(
   {
     // 👤 Basic User Info
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: [2, "Name must be at least 2 characters"],
+    },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please enter a valid email address",
+      ],
     },
-    password: { type: String, required: true, minlength: 6 },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters long"],
+      validate: {
+        validator: function (value) {
+          // Must contain 1 uppercase, 1 lowercase, 1 number, 1 symbol
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/.test(value);
+        },
+        message:
+          "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
+      },
+    },
 
     // 💳 Subscription / Payment (Razorpay)
     plan: {
       type: String,
-      enum: ["STARTER", "FOCUS_PACK", "GROWTH", "ELITE"],
-      default: "STARTER",
+      enum: ["STARTER", "FOCUS_PACK", "GROWTH", "ELITE", null],
+      default: null, // 🟢 No plan initially — user will upgrade after payment
     },
-    planPrice: { type: Number, default: 199 },
-    planExpiry: { type: Date },
+    planPrice: { type: Number, default: null },
+    planExpiry: { type: Date, default: null },
     subscriptionStatus: {
       type: String,
-      enum: ["active", "expired", "canceled"],
-      default: "expired",
+      enum: ["active", "expired", "canceled", "none"],
+      default: "none",
     },
-    razorpayOrderId: String,
-    razorpayPaymentId: String,
-    razorpaySignature: String,
 
-    // 🌍 (Keep Stripe fields commented — optional future)
-    // stripeCustomerId: String,
-    // stripeSubscriptionId: String,
+    // 💰 Razorpay Payment Details (only filled after successful payment)
+    razorpayOrderId: { type: String, default: null },
+    razorpayPaymentId: { type: String, default: null },
+    razorpaySignature: { type: String, default: null },
 
-    // 🔗 Reference to Subscription collection (optional)
+    // 🔗 Optional: Reference to Subscription collection
     subscriptionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",
     },
 
-    // 🧠 Feature Flags
+    // 🧠 Feature Flags (unlocked by plan)
     features: {
       betaAccess: { type: Boolean, default: false },
       focusMode: { type: Boolean, default: false },
@@ -60,23 +80,28 @@ const userSchema = new mongoose.Schema(
     ],
 
     // 🕒 Other metadata
-    lastLogin: Date,
-    resetToken: String,
-    resetTokenExpiry: Date,
+    lastLogin: { type: Date },
+    resetToken: { type: String },
+    resetTokenExpiry: { type: Date },
   },
   { timestamps: true }
 );
 
-// 🔒 Hash password before save
+//
+// 🔒 Hash password before saving
+//
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// 🔑 Compare password method
+//
+// 🔑 Compare entered password with stored hash
+//
 userSchema.methods.comparePassword = async function (enteredPassword) {
-  return bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
 export default mongoose.model("User", userSchema);

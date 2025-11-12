@@ -1,32 +1,60 @@
-import jwt from "jsonwebtoken";
+import { verifyToken as verifyJwt } from "../utils/jwt.js";
 import User from "../models/User.js";
 
+/**
+ * 🔒 Auth Middleware
+ * Validates JWT from cookies or Authorization header.
+ */
 export const authMiddleware = async (req, res, next) => {
   try {
-    const token =
-      req.headers.authorization?.split(" ")[1] || req.cookies?.token;
+    // try cookie first, then Authorization header
+    const tokenFromCookie = req.cookies?.token;
+    const authHeader = req.headers?.authorization;
+    const tokenFromHeader =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : null;
 
-    if (!token)
+    const token = tokenFromCookie || tokenFromHeader;
+
+    if (!token) {
+      console.log("AuthMiddleware: no token provided (cookies, headers):", {
+        cookies: req.cookies,
+        authorization: authHeader,
+      });
+      return res.status(401).json({
+        success: false,
+        message: "No token provided. Please log in again.",
+      });
+    }
+
+    // verify token using jwt util
+    const decoded = verifyJwt(token);
+    if (!decoded || !decoded.id) {
+      console.log("AuthMiddleware: token invalid or missing id:", decoded);
       return res
         .status(401)
-        .json({ success: false, message: "No token provided" });
+        .json({ success: false, message: "Invalid or expired token." });
+    }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-
-    if (!user)
+    // load user
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) {
+      console.log("AuthMiddleware: user not found for id:", decoded.id);
       return res
         .status(401)
-        .json({ success: false, message: "Invalid or deleted user" });
+        .json({ success: false, message: "User not found or deleted." });
+    }
 
-    req.user = decoded;
+    // attach user (full doc without password) to req
+    req.user = user;
     next();
-  } catch (error) {
-    console.error("Auth Middleware Error:", error.message);
-    if (error.name === "TokenExpiredError")
-      return res.status(401).json({ success: false, message: "Token expired" });
-    res
-      .status(401)
-      .json({ success: false, message: "Invalid or expired token" });
+  } catch (err) {
+    console.error("Auth Middleware Error:", err?.message || err);
+    // if token expired the verifyJwt already returned null, but also guard
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired authentication token.",
+    });
   }
 };

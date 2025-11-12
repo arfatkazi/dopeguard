@@ -1,5 +1,5 @@
 // =============================================================
-// 🧠 DopeGuard Backend Server — Razorpay + Arcjet + Security Layer
+// 🧠 DopeGuard Backend Server — Razorpay + Auth + Arcjet + Security Layer
 // =============================================================
 
 import express from "express";
@@ -11,65 +11,78 @@ import compression from "compression";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import { isSpoofedBot } from "@arcjet/inspect";
 import arcjet, { shield, detectBot, tokenBucket } from "@arcjet/node";
+import { isSpoofedBot } from "@arcjet/inspect";
 import connectDB from "../config/db.js";
 
 // ✅ Load environment variables first
 dotenv.config();
-
-// ✅ Connect MongoDB
 connectDB();
 
 // ✅ Import Routes
-import paymentRoutes from "../routes/paymentRoutes.js";
 import authRoutes from "../routes/authRoutes.js";
+import paymentRoutes from "../routes/paymentRoutes.js";
 
 // ✅ Initialize Express App
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* ----------------------------
-🌍 CORS Configuration (Fixed)
----------------------------- */
+// =============================================================
+// 🌍 CORS Configuration — FIXED for localhost cookie sharing
+// =============================================================
+const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // ✅ Only your frontend domain
-    credentials: true, // ✅ Required for cookies/auth headers
+    origin: allowedOrigin, // ✅ Frontend URL
+    credentials: true, // ✅ Allow cookies / auth headers
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-/* ----------------------------
-🧩 General Middleware
----------------------------- */
+// =============================================================
+// 🧩 Essential Middleware
+// =============================================================
 app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-/* ----------------------------
-🧠 Arcjet — Bot & Abuse Protection
----------------------------- */
+// =============================================================
+// ⚙️ Preflight Handling (Fixed for Express 5)
+// =============================================================
+// ❌ DO NOT use app.options("*") in Express 5 — it breaks path-to-regexp
+// ✅ Instead, let CORS middleware handle it automatically:
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// =============================================================
+// 🧠 Arcjet — Abuse + Bot Protection
+// =============================================================
 const aj = arcjet({
   key: process.env.ARCJET_KEY,
   rules: [
-    // 🛡️ Block injection, SQLi, XSS, etc.
-    shield({ mode: "LIVE" }),
-
-    // 🤖 Detect bots, allow search engines
+    shield({ mode: "LIVE" }), // Prevents XSS, SQLi, etc.
     detectBot({
       mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
-      allow: [
-        "CATEGORY:SEARCH_ENGINE",
-        "CATEGORY:HTTP_LIBRARY", // allows Postman, axios, curl, etc.
-        "LOCALHOST",
-      ],
+      allow: ["CATEGORY:SEARCH_ENGINE", "LOCALHOST"],
     }),
-
-    // ⏳ Token bucket rate limiting
     tokenBucket({
       mode: "LIVE",
       refillRate: 5,
@@ -79,74 +92,89 @@ const aj = arcjet({
   ],
 });
 
-// 🔐 Arcjet Protection Middleware
+// 🔐 Arcjet Middleware
 app.use(async (req, res, next) => {
   try {
     const decision = await aj.protect(req, { requested: 1 });
 
     if (decision.isDenied()) {
       if (decision.reason.isRateLimit())
-        return res.status(429).json({ error: "Too Many Requests" });
+        return res.status(429).json({
+          success: false,
+          message: "Too many requests. Please wait.",
+        });
+
       if (decision.reason.isBot())
-        return res.status(403).json({ error: "No bots allowed" });
-      return res.status(403).json({ error: "Forbidden" });
+        return res
+          .status(403)
+          .json({ success: false, message: "Bot access denied." });
+
+      return res
+        .status(403)
+        .json({ success: false, message: "Forbidden request." });
     }
 
     if (decision.ip?.isHosting() || decision.results.some(isSpoofedBot)) {
-      return res.status(403).json({ error: "Forbidden" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Suspicious client detected." });
     }
 
     next();
   } catch (err) {
-    console.error("Arcjet error:", err);
+    console.error("Arcjet Error:", err);
     next();
   }
 });
 
-/* ----------------------------
-🛡️ Express Rate Limiter
----------------------------- */
+// =============================================================
+// ⚙️ Rate Limiter — Brute Force & DoS Protection
+// =============================================================
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // Max requests per IP
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  message: { success: false, message: "Too many requests, slow down." },
 });
 app.use(limiter);
 
-/* ----------------------------
-📁 API Routes
----------------------------- */
+// =============================================================
+// 📁 Main API Routes
+// =============================================================
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
-/* ----------------------------
-❤️ Health Check Route
----------------------------- */
+// =============================================================
+// ❤️ Health Check Endpoint
+// =============================================================
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message:
-      "🧠 DopeGuard backend running securely with Arcjet ⚡ & Razorpay 💳",
+      "🧠 DopeGuard backend running securely with Arcjet ⚡ + Razorpay 💳 + JWT 🪙",
   });
 });
 
-/* ----------------------------
-❌ Global Error Handler
----------------------------- */
+// =============================================================
+// ❌ Global Error Handler
+// =============================================================
 app.use((err, req, res, next) => {
-  console.error("❌ Error:", err);
+  console.error("❌ Global Error:", err.stack || err);
   res.status(500).json({
     success: false,
     message: err.message || "Internal Server Error",
   });
 });
 
-/* ----------------------------
-🚀 Start Server
----------------------------- */
-app.listen(PORT, () => {
-  console.log(`⚙️  DopeGuard API running at: http://localhost:${PORT}`);
-  console.log("✅ Server started successfully with Arcjet + Razorpay");
-  console.log("🌍 Allowed Origin:", process.env.FRONTEND_URL);
+// =============================================================
+// 🚀 Start Server
+// =============================================================
+app.listen(PORT, "127.0.0.1", () => {
+  console.log(`⚙️  DopeGuard API running at: http://127.0.0.1:${PORT}`);
+  console.log("✅ Server started successfully with Arcjet + Razorpay + Auth");
+  console.log(
+    "🌍 Allowed Origin:",
+    process.env.FRONTEND_URL || "http://127.0.0.1:5173"
+  );
 });
