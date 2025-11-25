@@ -154,6 +154,17 @@ function SignInForm() {
         </button>
       </div>
 
+      {/* ⬇⬇ ADDING FORGOT PASSWORD LINK HERE ⬇⬇ */}
+      <p
+        className="text-sm text-cyan-400 text-right mt-1 cursor-pointer hover:text-cyan-300"
+        onClick={() => {
+          window.location.href = "/forgot-password";
+        }}
+      >
+        Forgot Password?
+      </p>
+      {/* ⬆⬆ END OF INSERTED SECTION ⬆⬆ */}
+
       <button
         type="submit"
         disabled={loading}

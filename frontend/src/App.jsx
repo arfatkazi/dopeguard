@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Lenis from "lenis";
-
 import "./App.css";
 import "./index.css";
 import Navbar from "./components/Navbar";
@@ -12,7 +11,9 @@ import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import PaymentFailed from "./pages/PaymentFailed";
-import Success from "./pages/Success"; // ✅ ADD THIS LINE
+import Success from "./pages/Success";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 /* ⚙️ Neural Boot Loader */
 function Loader() {
@@ -105,7 +106,9 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/payment-failed" element={<PaymentFailed />} />
-            <Route path="/success" element={<Success />} /> {/* ✅ Added */}
+            <Route path="/success" element={<Success />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </motion.main>
       </AnimatePresence>

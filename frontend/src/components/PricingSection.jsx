@@ -56,7 +56,7 @@ export default function PricingSection() {
   ];
 
   return (
-    <section className="relative py-28 overflow-hidden">
+    <section className="relative py-28 overflow-hidden -m-35 ">
       <motion.div
         className="text-center mb-16 relative z-10"
         initial={{ opacity: 0, y: 25 }}

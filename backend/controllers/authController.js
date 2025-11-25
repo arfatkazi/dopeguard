@@ -205,22 +205,56 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
+    if (!token) {
+      return res.status(400).json({ message: "Missing reset token" });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({ message: "New password required" });
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        message:
+          "Password must include uppercase, lowercase, number, and special character",
+      });
+    }
+
     const user = await User.findOne({
       resetToken: token,
       resetTokenExpiry: { $gt: Date.now() },
     });
 
-    if (!user)
+    if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
+    }
 
+    // apply new password
     user.password = newPassword;
     user.resetToken = null;
     user.resetTokenExpiry = null;
 
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
-    res.json({ message: "Password reset successful" });
+    // auto-login
+    const jwt = generateToken(user);
+    const cookieOptions = createCookieOptions();
+    res.cookie("token", jwt, cookieOptions);
+
+    return res.json({
+      success: true,
+      message: "Password reset successful",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        subscriptionStatus: user.subscriptionStatus,
+      },
+    });
   } catch (err) {
+    console.error("❌ Reset Password Error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
