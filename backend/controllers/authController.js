@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import User from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 /* ======================================================
    🍪 COOKIE OPTIONS (Cross-Origin + Localhost Safe)
@@ -163,5 +165,62 @@ export const logoutUser = async (req, res) => {
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({ success: false, message: "Logout failed" });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 min
+
+    await user.save();
+
+    const resetURL = `${process.env.RESET_URL}?token=${resetToken}`;
+
+    await sendEmail(
+      user.email,
+      "Reset your DopeGuard password",
+      `
+       <p>Click below to reset your password:</p>
+       <a href="${resetURL}">Reset Password</a>
+       <p>This link expires in 15 minutes.</p>
+      `
+    );
+
+    res.json({ message: "Password reset link sent" });
+  } catch (err) {
+    console.error("❌ Forgot Password Error:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired token" });
+
+    user.password = newPassword;
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error" });
   }
 };

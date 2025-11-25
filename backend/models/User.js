@@ -81,8 +81,9 @@ const userSchema = new mongoose.Schema(
 
     // 🕒 Other metadata
     lastLogin: { type: Date },
-    resetToken: { type: String },
-    resetTokenExpiry: { type: Date },
+    // 🟢 Added for Password Reset
+    resetToken: { type: String, default: null },
+    resetTokenExpiry: { type: Date, default: null },
   },
   { timestamps: true }
 );

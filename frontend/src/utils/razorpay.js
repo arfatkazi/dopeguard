@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "react-toastify";
 
 // ✅ Always send cookies for cross-origin requests
 axios.defaults.withCredentials = true;
@@ -15,7 +16,7 @@ export const initiateRazorpayPayment = async (plan) => {
     // ✅ 1️⃣ Quick check: is user logged in locally?
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
-      alert("Please sign in before making a payment.");
+      toast.error("Please sign in before making a payment.");
       return;
     }
 
@@ -40,7 +41,7 @@ export const initiateRazorpayPayment = async (plan) => {
     }
 
     if (!verify?.data?.success) {
-      alert("Session expired. Please log in again.");
+      toast.error("Session expired. Please log in again.");
       localStorage.removeItem("user");
       return;
     }
@@ -108,6 +109,6 @@ export const initiateRazorpayPayment = async (plan) => {
     razorpay.open();
   } catch (err) {
     console.error("💥 Razorpay Init Error:", err.response?.data || err);
-    alert("Unable to start payment. Please try again later.");
+    toast.error("Unable to start payment. Please try again later.");
   }
 };

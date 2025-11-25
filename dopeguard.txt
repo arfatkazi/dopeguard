@@ -148,3 +148,502 @@ Extension	          Manifest + File Structure	✅ Done	Clean folder setup
 
 Your system authenticates, processes payments, and saves active plans perfectly.
 That’s your foundation — the most complex part is done.
+
+
+
+
+
+
+✅ COMPLETED FEATURES (FULLY WORKING)
+✔ User Auth System
+
+Register
+
+Login
+
+Secure password hashing (bcrypt)
+
+JWT generation
+
+JWT stored in HTTP-only cookie
+
+authMiddleware verifies cookie or Bearer header
+
+logout
+
+verify token route
+
+stores lastLogin
+
+validation rules
+
+✔ Database Models
+
+User model
+
+Support Ticket model
+
+Device model
+
+Activity model
+
+✔ Razorpay Integration
+
+create-order route
+
+verify-payment route
+
+razorpay crypto signature validation
+
+updates user plan
+
+updates expiry date based on plan
+
+stores order & payment & signature
+
+sets subscriptionStatus
+
+plan duration logic
+
+✔ API Security
+
+Rate limit
+
+Arcjet security
+
+CORS configured
+
+helmet
+
+compression
+
+morgan
+
+cookie parser
+
+✔ Frontend Auth Modal
+
+signup
+
+signin
+
+toast notifications
+
+eye reveal password
+
+error toasts
+
+form animations
+
+reload after login
+
+toast container
+
+axios global config
+
+
+
+
+
+🟡 PARTIAL FEATURES (50% done)
+🟡 Frontend Payment Flow
+
+Razorpay UI flow exists
+
+Create-order API exists
+
+verify-payment API exists
+
+STILL missing: redirect to success page after payment
+
+🟡 Frontend Pages
+
+Missing detail pages:
+
+payment success screen
+
+my account screen
+
+subscription summary page
+
+🟡 Extension
+
+AI blocking fully written
+
+BUT extension not authenticated
+
+No API call to /auth/verify
+
+No device registration
+
+❌ NOT DONE / PENDING
+❌ Password Reset System
+
+not done
+
+forgot password API
+
+reset password token
+
+send email with link
+
+token expiry
+
+reset password frontend UI
+
+❌ Email service
+
+not done
+
+SMTP config
+
+Nodemailer setup
+
+Email templates
+
+❌ Deployments (not done)
+
+Frontend NOT hosted
+
+Backend NOT hosted
+
+❌ Domain Linking
+
+not pointed
+
+no HTTPS
+
+no CORS updated
+
+❌ Extension Cloud Sync
+
+not done
+
+syncing blocked counts
+
+syncing activity
+
+focus scores
+
+devices list
+
+❌ Plan Enforcement in extension
+
+not done
+
+restrict blocking if no plan
+
+🧭 YOUR REAL PROGRESS SUMMARY
+Feature	Status
+Auth System	✅ Done
+Plan Payment Flow	🟡 70% done
+Database Models	✅ Done
+AI Chrome Extension Engine	✅ Done
+Frontend Modals UI	🟢 Done
+Toasts	🟢 Done
+Password Reveal	🟢 Done
+Forgot Password	❌ Not started
+Email Sending	❌ Not started
+Hosting Backend	❌ Not started
+Hosting Frontend	❌ Not started
+Extension Backend Integration	❌ Not done
+Domain setup	❌ Not done
+
+THIS IS REAL WEBSITE
+------------------------------------------------------------------------------------------------------------------------------------
+Understood — here is a clean, structured, professional PHASE-WISE plan, separated clearly into:
+
+A) Backend Phases
+B) Frontend Phases
+
+This will tell you exactly:
+
+✔ what is completed
+✔ what is partially done
+✔ what must be done next
+✔ in what exact order
+------------------------------------------------------------------------------------------------------------------------------------
+
+🚀 A) BACKEND PHASES
+✅ PHASE 1 — Core Authentication & DB
+
+STATUS: COMPLETED
+
+Contains:
+
+Register user
+
+Login user
+
+Logout
+
+JWT cookie system
+
+bcrypt password hashing
+
+MongoDB models
+
+authMiddleware
+
+verifyToken route
+
+✔ Fully working
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+🚧 PHASE 2 — Payments Integration
+
+STATUS: 90% Completed
+
+Contains:
+
+Razorpay create-order
+
+Razorpay verify-payment
+
+update DB user plan + expiry
+
+payment success redirect
+
+Missing small part:
+
+❌ when plan expires → automatic status change (cron or check)
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+⏳ PHASE 3 — Email + Password Reset
+
+STATUS: NOT STARTED
+
+YOU MUST BUILD:
+
+Backend Required:
+
+/api/auth/forgot-password
+
+/api/auth/reset-password
+
+generate reset token
+
+save resetToken & resetTokenExpiry in DB
+
+send email with link
+
+verify token on reset
+
+allow new password update
+
+What tools:
+
+Nodemailer
+
+SMTP creds in .env
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+🔐 PHASE 4 — Extension Secure Connectivity
+
+STATUS: NOT DONE
+
+Must implement these:
+
+/api/extension/auth (login from extension)
+
+extension must call /api/auth/verify
+
+store token inside chrome storage
+
+update user device DB on login
+
+use device model
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+🔒 PHASE 5 — Subscription Enforcement
+
+STATUS: NOT DONE
+
+Required:
+
+middleware:
+
+block if plan expired
+
+block if no plan
+
+extension mode:
+
+disable blocking if plan inactive
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+🌍 PHASE 6 — Deployment
+
+STATUS: NOT DONE
+
+Steps:
+
+Deploy backend → Railway
+
+Set domain → api.dopeguard.com
+
+Enable HTTPS
+
+Set CORS allow domain
+
+Set production cookie secure:true
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+⭐ PHASE 7 — Logs + Monitoring
+
+(optional later)
+
+winston logger
+
+Sentry errors
+
+request analytics
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+💠 B) FRONTEND PHASES
+✅ PHASE 1 — UI + Auth System
+
+STATUS: DONE
+
+Includes:
+
+Signup
+
+Login
+
+toastify
+
+password eye reveal
+
+reload after login
+
+axios global config
+
+user saved in localStorage
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+🚧 PHASE 2 — Payments UI
+
+STATUS: 90% DONE
+
+Includes:
+
+Razorpay UI modal
+
+order call
+
+verify-payment call
+
+redirect success
+
+Missing:
+
+failure fallback UI polish
+
+success screen improvements
+------------------------------------------------------------------------------------------------------------------------------------
+
+❌ PHASE 3 — Password Reset UI
+
+STATUS: NOT DONE
+
+Required screens:
+
+“Forgot Password” button in modal
+
+ForgotPassword.jsx page
+
+ResetPassword.jsx page
+
+nice UI + toasts
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+🟡 PHASE 4 — Subscription/Account UI
+
+STATUS: 20% DONE
+
+Give user:
+
+pages missing:
+
+My Account
+
+Subscription page
+
+Payment history
+
+Change plan (coming soon UI)
+
+Cancel subscription (if implemented)
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+🚧 PHASE 5 — Extension Integration UI
+
+STATUS: NOT DONE
+
+Requires:
+
+show “Install Extension” page
+
+show instructions
+
+verify if extension connected
+
+show device list
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+❌ PHASE 6 — HOSTING
+
+STATUS: NOT DONE
+
+Steps:
+
+A) Host frontend → Vercel
+B) Update:
+
+VITE_BACKEND_URL= https://api.dopeguard.com
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+🧭 OVERALL = PHASE SUMMARY
+BACKEND ROADMAP
+PHASE	STATUS
+1 Auth	✅
+2 Payments	🟡
+3 Password Reset	❌
+4 Extension Auth	❌
+5 Subscription Enforcement	❌
+6 Deployment	❌
+FRONTEND ROADMAP
+PHASE	STATUS
+1 UI + Auth	✅
+2 Payment Flow	🟡
+3 Reset Password UI	❌
+4 Subscription UI	❌
+5 Extension UI	❌
+6 Hosting	❌

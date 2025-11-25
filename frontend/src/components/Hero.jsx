@@ -40,7 +40,7 @@ export default function Hero({ chromeUrl = "#" }) {
             href="/pricing"
             className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-cyan-400 text-black font-semibold shadow-lg hover:shadow-cyan-400/40 transition-all hover:scale-[1.03]"
           >
-            <Star size={16} /> Get Focused — ₹99/month
+            <Star size={16} /> Get Focused — ₹199/month
           </a>
 
           <button
@@ -57,7 +57,7 @@ export default function Hero({ chromeUrl = "#" }) {
       </div>
 
       {/* 🛡️ RIGHT: Neural Shield Pulse */}
-      <div className="relative flex justify-center items-center">
+      <div className="relative flex justify-center items-center ">
         {/* Outer glow wave */}
         <motion.div
           className="absolute w-[280px] h-[280px] rounded-full bg-gradient-to-r from-cyan-400/30 to-blue-400/30 blur-[80px]"

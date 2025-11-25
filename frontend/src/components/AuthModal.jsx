@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
+import { toast } from "react-toastify";
 
 /* ======================================================
    🌐 Global Axios Configuration (Cookie + Base URL)
 ====================================================== */
 
-// ✅ Always send cookies (important for JWT via cookies)
+// Always send cookies (重要 for JWT)
 axios.defaults.withCredentials = true;
 
-// ✅ Ensure consistent backend URL (so you don’t repeat it everywhere)
+// Base URL for all callers
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export default function AuthModal({ open, onClose }) {
-  const [mode, setMode] = useState("signin"); // "signin" or "signup"
+  const [mode, setMode] = useState("signin");
 
-  // Close modal with ESC key
   useEffect(() => {
     const handleEsc = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", handleEsc);
@@ -43,7 +43,7 @@ export default function AuthModal({ open, onClose }) {
           transition={{ duration: 0.3, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ❌ Close button */}
+          {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-md bg-white/10 hover:bg-white/20"
@@ -61,8 +61,9 @@ export default function AuthModal({ open, onClose }) {
               }`}
               onClick={() => setMode("signin")}
             >
-              Sign In
+              Log In
             </button>
+
             <button
               className={`px-4 py-2 font-medium ${
                 mode === "signup"
@@ -75,12 +76,7 @@ export default function AuthModal({ open, onClose }) {
             </button>
           </div>
 
-          {/* Form content */}
-          {mode === "signin" ? (
-            <SignInForm onClose={onClose} />
-          ) : (
-            <SignUpForm onClose={onClose} />
-          )}
+          {mode === "signin" ? <SignInForm /> : <SignUpForm />}
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -90,31 +86,34 @@ export default function AuthModal({ open, onClose }) {
 /* ------------------------------------------------
    SIGN IN FORM
 ------------------------------------------------ */
-function SignInForm({ onClose }) {
+function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      const { data } = await axios.post("/api/auth/login", { email, password });
+      const { data } = await axios.post("/api/auth/login", {
+        email,
+        password,
+      });
 
       if (data.success) {
         localStorage.setItem("user", JSON.stringify(data.user));
-        alert("✅ Login successful!");
-        console.log("Cookies after login:", document.cookie);
+        toast.success("Login Successful!");
         window.location.reload();
       } else {
-        alert(data.message || "Login failed");
+        toast.error(data.message);
       }
     } catch (err) {
-      console.error("Login error:", err.response?.data || err);
-      alert(err.response?.data?.message || "❌ Invalid credentials.");
-    } finally {
-      setLoading(false);
+      toast.error(err.response?.data?.message || "Invalid credentials");
     }
+
+    setLoading(false);
   };
 
   return (
@@ -130,23 +129,35 @@ function SignInForm({ onClose }) {
       <input
         type="email"
         placeholder="Email"
+        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
       />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-      />
+
+      <div className="relative">
+        <input
+          type={showPass ? "text" : "password"}
+          placeholder="Password"
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowPass(!showPass)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-black/90 cursor-pointer"
+        >
+          {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+        </button>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold rounded-xl hover:shadow-cyan-400/40 transition-all disabled:opacity-60"
+        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold rounded-xl disabled:opacity-60"
       >
         {loading ? "Signing In..." : "Sign In"}
       </button>
@@ -155,35 +166,34 @@ function SignInForm({ onClose }) {
 }
 
 /* ------------------------------------------------
-   SIGN UP FORM
+   SIGN UP
 ------------------------------------------------ */
-function SignUpForm({ onClose }) {
+function SignUpForm() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
-  const handleRegister = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const { data } = await axios.post("/api/auth/register", form);
 
       if (data.success) {
         localStorage.setItem("user", JSON.stringify(data.user));
-        alert("🎉 Account created successfully!");
-        console.log("Cookies after register:", document.cookie);
+        toast.success("Account Created!");
         window.location.reload();
       } else {
-        alert(data.message || "Registration failed");
+        toast.error(data.message);
       }
     } catch (err) {
-      console.error("Register error:", err.response?.data || err);
-      alert(
-        err.response?.data?.message ||
-          "❌ Registration failed. Try different email."
+      toast.error(
+        err.response?.data?.message || "Registration failed, try again"
       );
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -194,36 +204,49 @@ function SignUpForm({ onClose }) {
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.25 }}
       className="space-y-4"
-      onSubmit={handleRegister}
+      onSubmit={submit}
     >
       <input
         type="text"
         placeholder="Full Name"
+        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
         required
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
       />
+
       <input
         type="email"
         placeholder="Email"
+        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none"
         value={form.email}
         onChange={(e) => setForm({ ...form, email: e.target.value })}
         required
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
       />
-      <input
-        type="password"
-        placeholder="Create Password"
-        value={form.password}
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
-        required
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-      />
+
+      <div className="relative">
+        <input
+          type={showPass ? "text" : "password"}
+          placeholder="Create Password"
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          required
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowPass(!showPass)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-black/90 cursor-pointer"
+        >
+          {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+        </button>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold rounded-xl hover:shadow-cyan-400/40 transition-all disabled:opacity-60"
+        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold rounded-xl disabled:opacity-60"
       >
         {loading ? "Creating Account..." : "Create Account"}
       </button>
