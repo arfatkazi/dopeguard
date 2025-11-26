@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import { useSearchParams } from "react-router-dom";
 import { Lock, Eye, EyeOff } from "lucide-react";
 
-// 🔥 GLOBAL axios config
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -27,21 +26,31 @@ export default function ResetPassword() {
       return toast.error("Enter new password");
     }
 
+    // 🔥 FRONTEND PASSWORD RULES (same as backend)
+    if (newPassword.length < 6)
+      return toast.error("Password must be at least 6 characters");
+    if (!/[A-Z]/.test(newPassword))
+      return toast.error("Password must contain an uppercase letter");
+    if (!/[a-z]/.test(newPassword))
+      return toast.error("Password must contain a lowercase letter");
+    if (!/[0-9]/.test(newPassword))
+      return toast.error("Password must contain a number");
+    if (!/[\W_]/.test(newPassword))
+      return toast.error("Password must contain a special character");
+
     try {
-      const { data } = await axios.post(
-        "/api/auth/reset-password",
-        { token, newPassword },
+      await axios.post(
+        `/api/auth/reset-password/${token}`,
+        { password: newPassword },
         { withCredentials: true }
       );
 
-      // ⭐ save logged in user so UI updates immediately
-      if (data?.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-
       toast.success("Password reset successful!");
 
-      // redirect home
+      // 🔥 Tell Navbar to update user instantly
+      window.dispatchEvent(new Event("userUpdated"));
+
+      // Backend already logged in → go home
       window.location.href = "/";
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reset password");
@@ -51,7 +60,6 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-[#020814] flex justify-center items-center px-4">
       <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-10 w-full max-w-lg shadow-2xl text-white">
-        {/* Icon */}
         <div className="flex justify-center mb-4">
           <div className="bg-blue-500/20 p-4 rounded-full border border-blue-500/40">
             <Lock size={32} className="text-blue-400" />
@@ -76,7 +84,6 @@ export default function ResetPassword() {
               onChange={(e) => setNewPassword(e.target.value)}
             />
 
-            {/* password eye */}
             <button
               type="button"
               onClick={() => setShowPass((prev) => !prev)}

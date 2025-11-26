@@ -647,3 +647,316 @@ PHASE	STATUS
 4 Subscription UI	❌
 5 Extension UI	❌
 6 Hosting	❌
+
+
+
+
+
+
+LATEST SUMMARY Plan
+
+
+
+Here is EVERY PHASE (backend + frontend + extension + deployment) in one single, clean, MASTER LIST.
+
+This is your OFFICIAL DopeGuard Phase Roadmap now.
+Keep this forever.
+This is the entire project broken into logical phases.
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+🚀 BACKEND PHASES
+✅ PHASE 1 — Core Authentication System (DONE)
+
+Register
+
+Login
+
+Logout
+
+JWT cookie setup
+
+bcrypt hashing
+
+authMiddleware
+
+verifyToken endpoint
+
+User model with login timestamps
+
+🟡 PHASE 2 — Razorpay Payments System (~90% DONE)
+
+Create order API
+
+Verify payment signature
+
+Store plan, expiry, subscriptionStatus
+
+Store razorpay order + payment + signature
+
+Remaining
+
+auto plan expiry update (cronjob OR on verify OR middleware check)
+
+🟡 PHASE 3 — Email + Password Reset (~90% DONE)
+
+forgot password API
+
+reset password API
+
+resetToken, resetTokenExpiry fields
+
+sendResetEmail()
+
+frontend pages working
+
+Remaining
+
+nicer HTML email template
+
+email rate limiting
+
+❌ PHASE 4 — Extension Authentication
+
+Must build:
+
+Backend APIs needed:
+
+/api/extension/login
+
+/api/extension/verify
+
+Extension must send token → backend
+Backend must validate token
+Backend must register device
+
+❌ PHASE 5 — Subscription Enforcement Layer
+
+Add middleware logic:
+
+If:
+
+no plan
+OR
+
+expired plan
+
+→ block premium APIs
+→ extension must disable premium features
+
+Example middleware:
+requireActiveSubscription
+
+❌ PHASE 6 — Backend Deployment
+
+deploy on Railway
+
+add domain
+
+enable HTTPS
+
+production COOKIE secure:true
+
+CORS allow domain
+
+Mongo Atlas config
+
+rate limit production rules
+
+❌ PHASE 7 — Logging + Monitoring
+
+winston logs
+
+request logging
+
+email error logs
+
+uptime logs
+
+crash alerts
+
+Sentry alerts
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+🎨 FRONTEND (React) PHASES
+✅ PHASE 1 — Auth UI System
+
+Auth Modal
+
+Register form
+
+Login form
+
+Validation
+
+Toasts
+
+JWT cookie handling
+
+Reload after login
+
+🟡 PHASE 2 — Razorpay UI (~90%)
+
+Razorpay popup
+
+Start payment
+
+Verify payment
+
+Reload
+
+Still needed:
+
+success page UX polish
+
+show plan & expiry there
+
+✅ PHASE 3 — Password Reset UI
+
+ForgotPassword.jsx page
+
+ResetPassword.jsx page
+
+Eye toggle UI
+
+Automatic redirect after success
+
+❌ PHASE 4 — Subscription Account UI
+
+Need:
+
+My Account page
+
+Subscription information
+
+Plan expiry status
+
+Payment history list
+
+❌ PHASE 5 — Extension Integration UI
+
+Install Extension page
+
+connection state
+
+device list
+
+device revoke
+
+extension instruction page
+
+❌ PHASE 6 — Hosting
+
+deploy frontend → Vercel
+
+configure domain
+
+set VITE_BACKEND_URL
+
+connect with backend
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+🛡 EXTENSION PHASES
+✅ PHASE 1 — File Foundation Done
+
+manifest.json
+background.js
+content_script.js
+popup UI
+icons
+
+✅ PHASE 2 — AI Shield Engine
+
+NSFW.js blocking
+
+keyword filtering
+
+site blocking logic
+
+❌ PHASE 3 — Extension Login
+
+login via API
+
+store token in chrome.storage
+
+send Authorization header
+
+❌ PHASE 4 — Extension Account Enforcement
+
+verify plan from backend
+
+disable shield if expired
+
+premium-only features
+
+❌ PHASE 5 — Extension Sync
+
+Future:
+
+usage analytics
+
+blocked count stats
+
+daily productivity score
+
+sync device sessions
+
+🌍 DEPLOYMENT PHASES
+❌ PHASE 1 — Domain Purchase
+
+(dopeguard.com already purchased — good)
+
+❌ PHASE 2 — Deploy Backend
+
+Railway
+
+❌ PHASE 3 — Deploy Frontend
+
+Vercel
+
+❌ PHASE 4 — Configure DNS
+
+api.dopeguard.com
+www.dopeguard.com
+
+❌ PHASE 5 — SSL Activation
+❌ PHASE 6 — Production CORS Config
+🔥 YOUR COMPLETION SCORE
+💠 BACKEND Progress
+
+1.5 / 7 phases complete
+
+💠 FRONTEND Progress
+
+2 / 6 phases complete
+
+💠 EXTENSION Progress
+
+1.5 / 5 phases complete
+
+💠 Deployment Progress
+
+0 / 6 phases complete
+
+⭐ TOTAL PROJECT COMPLETION
+
+≈ 35% DONE
+
+(very good progress)
+
+You are past the hardest foundation work.
+
+From here it’s stacking layers.

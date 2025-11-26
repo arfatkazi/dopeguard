@@ -175,14 +175,21 @@ export const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Generate raw token
     const resetToken = crypto.randomBytes(32).toString("hex");
 
-    user.resetToken = resetToken;
-    user.resetTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 min
+    // HASH IT BEFORE SAVING (this is the FIX)
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
-    await user.save();
+    user.resetToken = hashedToken; // save hashed
+    user.resetTokenExpiry = Date.now() + 1000 * 60 * 15;
 
-    const resetURL = `${process.env.RESET_URL}?token=${resetToken}`;
+    await user.save({ validateBeforeSave: false });
+
+    const resetURL = `${process.env.RESET_URL}?token=${resetToken}`; // send raw
 
     await sendEmail(
       user.email,
@@ -203,26 +210,18 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { token } = req.params;
+    const { password } = req.body;
 
-    if (!token) {
-      return res.status(400).json({ message: "Missing reset token" });
-    }
+    if (!token) return res.status(400).json({ message: "Missing token" });
+    if (!password)
+      return res.status(400).json({ message: "Password required" });
 
-    if (!newPassword) {
-      return res.status(400).json({ message: "New password required" });
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
-    if (!passwordRegex.test(newPassword)) {
-      return res.status(400).json({
-        message:
-          "Password must include uppercase, lowercase, number, and special character",
-      });
-    }
+    // Hash token to compare with DB
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
-      resetToken: token,
+      resetToken: hashedToken,
       resetTokenExpiry: { $gt: Date.now() },
     });
 
@@ -230,31 +229,35 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // apply new password
-    user.password = newPassword;
+    // Set new password
+    user.password = password;
     user.resetToken = null;
     user.resetTokenExpiry = null;
 
-    await user.save({ validateBeforeSave: false });
+    await user.save();
 
-    // auto-login
+    // Auto login after reset
     const jwt = generateToken(user);
-    const cookieOptions = createCookieOptions();
-    res.cookie("token", jwt, cookieOptions);
 
-    return res.json({
+    res.cookie("token", jwt, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({
       success: true,
       message: "Password reset successful",
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        plan: user.plan,
-        subscriptionStatus: user.subscriptionStatus,
       },
     });
   } catch (err) {
-    console.error("❌ Reset Password Error:", err);
+    console.error("Reset Password Error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };

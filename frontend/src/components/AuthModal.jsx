@@ -5,13 +5,9 @@ import { X, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 
 /* ======================================================
-   🌐 Global Axios Configuration (Cookie + Base URL)
+   🌐 Global Axios Configuration
 ====================================================== */
-
-// Always send cookies (重要 for JWT)
 axios.defaults.withCredentials = true;
-
-// Base URL for all callers
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -19,9 +15,9 @@ export default function AuthModal({ open, onClose }) {
   const [mode, setMode] = useState("signin");
 
   useEffect(() => {
-    const handleEsc = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
+    const handler = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
   if (!open) return null;
@@ -43,7 +39,6 @@ export default function AuthModal({ open, onClose }) {
           transition={{ duration: 0.3, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-md bg-white/10 hover:bg-white/20"
@@ -51,7 +46,6 @@ export default function AuthModal({ open, onClose }) {
             <X size={18} />
           </button>
 
-          {/* Tabs */}
           <div className="flex justify-center mb-6 border-b border-white/10">
             <button
               className={`px-4 py-2 font-medium ${
@@ -83,9 +77,8 @@ export default function AuthModal({ open, onClose }) {
   );
 }
 
-/* ------------------------------------------------
-   SIGN IN FORM
------------------------------------------------- */
+/* ---------------- LOGIN ---------------- */
+
 function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -97,18 +90,27 @@ function SignInForm() {
     setLoading(true);
 
     try {
-      const { data } = await axios.post("/api/auth/login", {
-        email,
-        password,
-      });
+      const { data } = await axios.post("/api/auth/login", { email, password });
 
-      if (data.success) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("Login Successful!");
-        window.location.reload();
-      } else {
+      if (!data.success) {
         toast.error(data.message);
+        setLoading(false);
+        return;
       }
+
+      /** NEW fixed logic */
+      await axios
+        .get("/api/auth/verify")
+        .then((res) => {
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        })
+        .catch(() => {
+          localStorage.removeItem("user");
+        });
+
+      toast.success("Logged in!");
+
+      window.location.href = "/";
     } catch (err) {
       toast.error(err.response?.data?.message || "Invalid credentials");
     }
@@ -118,67 +120,58 @@ function SignInForm() {
 
   return (
     <motion.form
-      key="signin"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ duration: 0.25 }}
       className="space-y-4"
       onSubmit={handleLogin}
     >
       <input
+        required
         type="email"
         placeholder="Email"
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        required
       />
 
       <div className="relative">
         <input
+          required
           type={showPass ? "text" : "password"}
           placeholder="Password"
-          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
         />
-
         <button
           type="button"
           onClick={() => setShowPass(!showPass)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-black/90 cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60"
         >
-          {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+          {showPass ? <Eye /> : <EyeOff />}
         </button>
       </div>
 
-      {/* ⬇⬇ ADDING FORGOT PASSWORD LINK HERE ⬇⬇ */}
       <p
-        className="text-sm text-cyan-400 text-right mt-1 cursor-pointer hover:text-cyan-300"
-        onClick={() => {
-          window.location.href = "/forgot-password";
-        }}
+        className="text-sm text-cyan-400 text-right cursor-pointer"
+        onClick={() => (window.location.href = "/forgot-password")}
       >
-        Forgot Password?
+        Forgot password?
       </p>
-      {/* ⬆⬆ END OF INSERTED SECTION ⬆⬆ */}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold rounded-xl disabled:opacity-60"
+        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black rounded-xl"
       >
-        {loading ? "Signing In..." : "Sign In"}
+        {loading ? "..." : "Sign In"}
       </button>
     </motion.form>
   );
 }
 
-/* ------------------------------------------------
-   SIGN UP
------------------------------------------------- */
+/* ---------------- SIGNUP ---------------- */
+
 function SignUpForm() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -191,17 +184,26 @@ function SignUpForm() {
     try {
       const { data } = await axios.post("/api/auth/register", form);
 
-      if (data.success) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("Account Created!");
-        window.location.reload();
-      } else {
+      if (!data.success) {
         toast.error(data.message);
+        return;
       }
+
+      /** NEW Fixed logic */
+      await axios
+        .get("/api/auth/verify")
+        .then((res) => {
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        })
+        .catch(() => {
+          localStorage.removeItem("user");
+        });
+
+      toast.success("Welcome!");
+
+      window.location.href = "/";
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Registration failed, try again"
-      );
+      toast.error("Registration failed");
     }
 
     setLoading(false);
@@ -209,57 +211,54 @@ function SignUpForm() {
 
   return (
     <motion.form
-      key="signup"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ duration: 0.25 }}
       className="space-y-4"
       onSubmit={submit}
     >
       <input
+        required
         type="text"
-        placeholder="Full Name"
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none"
+        placeholder="Full name"
+        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
-        required
       />
 
       <input
+        required
         type="email"
         placeholder="Email"
-        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none"
+        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white"
         value={form.email}
         onChange={(e) => setForm({ ...form, email: e.target.value })}
-        required
       />
 
       <div className="relative">
         <input
+          required
           type={showPass ? "text" : "password"}
-          placeholder="Create Password"
-          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none"
+          placeholder="Password"
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
         />
 
         <button
           type="button"
           onClick={() => setShowPass(!showPass)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-black/90 cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60"
         >
-          {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
+          {showPass ? <Eye /> : <EyeOff />}
         </button>
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold rounded-xl disabled:opacity-60"
+        className="w-full py-3 bg-gradient-to-r from-cyan-400 to-blue-400 text-black rounded-xl"
       >
-        {loading ? "Creating Account..." : "Create Account"}
+        {loading ? "..." : "Create Account"}
       </button>
     </motion.form>
   );

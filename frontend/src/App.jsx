@@ -1,3 +1,4 @@
+import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -14,6 +15,10 @@ import PaymentFailed from "./pages/PaymentFailed";
 import Success from "./pages/Success";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL =
+  import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:5000";
 
 /* ⚙️ Neural Boot Loader */
 function Loader() {
@@ -51,8 +56,23 @@ export default function App() {
   const location = useLocation();
   const lenis = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState(null);
 
-  // ✅ Initialize Lenis ONCE globally
+  /* Restore session from Cookie JWT automatically */
+  useEffect(() => {
+    axios
+      .get("/api/auth/verify", { withCredentials: true })
+      .then((res) => {
+        setUser(res.data.user);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+      })
+      .catch(() => {
+        setUser(null);
+        localStorage.removeItem("user");
+      });
+  }, []);
+
+  // initialize smooth scroll
   useEffect(() => {
     if (!lenis.current) {
       const l = new Lenis({
@@ -74,7 +94,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ Scroll to top on route change (no flicker)
+  // scroll top on route change
   useEffect(() => {
     if (lenis.current) {
       lenis.current.scrollTo(0, { immediate: true });
@@ -89,7 +109,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-[#050b18] text-white overflow-hidden">
       <Navbar />
 
-      {/* 🔄 Page Transition */}
+      {/* Page Transitions */}
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}

@@ -14,6 +14,7 @@ import rateLimit from "express-rate-limit";
 import arcjet, { shield, detectBot, tokenBucket } from "@arcjet/node";
 import { isSpoofedBot } from "@arcjet/inspect";
 import connectDB from "../config/db.js";
+import extensionRoutes from "../routes/extensionRoutes.js";
 
 // ✅ Load environment variables first
 dotenv.config();
@@ -30,12 +31,16 @@ const PORT = process.env.PORT || 5000;
 // =============================================================
 // 🌍 CORS Configuration — FIXED for localhost cookie sharing
 // =============================================================
-const allowedOrigin = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
 
 app.use(
   cors({
-    origin: allowedOrigin, // ✅ Frontend URL
-    credentials: true, // ✅ Allow cookies / auth headers
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // mobile / curl / postman
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -49,28 +54,6 @@ app.use(compression());
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
-
-// =============================================================
-// ⚙️ Preflight Handling (Fixed for Express 5)
-// =============================================================
-// ❌ DO NOT use app.options("*") in Express 5 — it breaks path-to-regexp
-// ✅ Instead, let CORS middleware handle it automatically:
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    return res.sendStatus(200);
-  }
-  next();
-});
 
 // =============================================================
 // 🧠 Arcjet — Abuse + Bot Protection
@@ -144,6 +127,7 @@ app.use(limiter);
 // =============================================================
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/extension", extensionRoutes);
 
 // =============================================================
 // ❤️ Health Check Endpoint

@@ -14,10 +14,39 @@ export default function Navbar() {
   const [showAuth, setShowAuth] = useState(false);
   const [user, setUser] = useState(null);
 
-  // 🧠 Load user from localStorage on mount
+  /* -------------------------------------------
+      FIX #1: Single function to fetch user
+  --------------------------------------------*/
+  const fetchUser = () => {
+    axios
+      .get("/api/auth/verify")
+      .then((res) => {
+        setUser(res.data.user);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+      })
+      .catch(() => {
+        setUser(null);
+        localStorage.removeItem("user");
+      });
+  };
+
+  /* 1) INITIAL LOAD */
+  useEffect(fetchUser, []);
+
+  /* -------------------------------------------
+      FIX #2: Update navbar after reset/login
+      + update on window focus
+  --------------------------------------------*/
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
+    const handler = () => fetchUser();
+
+    window.addEventListener("userUpdated", handler);
+    window.addEventListener("focus", handler); // 🔥 added fix
+
+    return () => {
+      window.removeEventListener("userUpdated", handler);
+      window.removeEventListener("focus", handler);
+    };
   }, []);
 
   // Fade in sync with loader
@@ -33,22 +62,19 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
+  // Close mobile menu on route change
   useEffect(() => setOpen(false), [location.pathname]);
 
   const handleLogout = async () => {
     try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`,
-        {},
-        { withCredentials: true }
-      );
+      await axios.post("/api/auth/logout");
       localStorage.removeItem("user");
       setUser(null);
+
+      window.dispatchEvent(new Event("userUpdated"));
+
       navigate("/");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
+    } catch {}
   };
 
   if (!visible) return null;

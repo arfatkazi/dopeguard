@@ -39,6 +39,6 @@ router.post("/forgot-password", forgotPassword);
 /**
  * @route   POST /api/auth/reset-password
  */
-router.post("/reset-password", resetPassword);
+router.post("/reset-password/:token", resetPassword);
 
 export default router;
