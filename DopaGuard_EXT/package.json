@@ -2,14 +2,24 @@
   "name": "dopa_guard_ext",
   "version": "1.0.0",
   "type": "module",
-  "description": "DopaGuard AI Shield Chrome/Brave Extension — Blocks NSFW sites and images.",
+  "description": "DopeGuard AI Shield Chrome/Brave Extension — Blocks NSFW sites and images.",
   "scripts": {
-    "build": "build.bat",
-    "verify": "node verify_build.mjs"
+    "clean": "rimraf extension",
+    "build:es": "esbuild src/content_entry.js src/background.js src/popup.js --bundle --format=esm --outdir=extension --sourcemap",
+
+    "copy:static": "cpx manifest.json extension && cpx src/popup.html extension && cpx src/blocked.jpg extension && cpx src/dopeguard.jpg extension && cpx src/adult_keywords.js extension && cpx \"src/icons/*\" extension/icons && cpx \"src/model/**/*\" extension/model && cpx \"src/libs/*\" extension/libs",
+
+    "copy:tf": "cpx \"node_modules/@tensorflow/tfjs-backend-wasm/dist/*.wasm\" extension",
+
+    "build": "npm run clean && npm run build:es && npm run copy:static && npm run copy:tf"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
-    "esbuild": "^0.25.12",
     "nsfwjs": "^4.2.1"
+  },
+  "devDependencies": {
+    "cpx": "^1.5.0",
+    "esbuild": "^0.27.0",
+    "rimraf": "^6.1.2"
   }
 }

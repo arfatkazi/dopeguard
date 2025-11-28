@@ -1,30 +1,35 @@
 @echo off
-echo 🚀 Building DopeGuard Extension...
+setlocal
 
-:: Ensure output folder exists
-if not exist "extension" mkdir extension
+echo Cleaning old build...
+if exist extension rmdir /S /Q extension
 
-:: === Bundle content_entry.js ===
-echo 🧠 Bundling content_entry.js ...
-npx esbuild src/content_entry.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/content_entry.js
+echo Creating extension folder...
+mkdir extension 2>nul
+mkdir extension\icons 2>nul
 
-:: === Bundle background.js ===
-echo ⚙️  Bundling background.js ...
-npx esbuild src/background.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/background.bundle.js
+echo Bundling JS files with esbuild...
+npx esbuild src/content_entry.js src/background.js src/popup.js src/utils/auth.js src/utils/api.js ^
+ --bundle ^
+ --format=esm ^
+ --sourcemap ^
+ --outdir=extension
 
-:: === Bundle popup.js ===
-echo 💬 Bundling popup.js ...
-npx esbuild src/popup.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/popup.bundle.js
+if %ERRORLEVEL% neq 0 (
+  echo esbuild failed. Exiting.
+  exit /b %ERRORLEVEL%
+)
 
-:: === Copy static assets ===
-echo 📦 Copying static assets...
-xcopy src\*.html extension\ /Y >nul
-xcopy src\*.jpg extension\ /Y >nul
-xcopy src\*.png extension\ /Y >nul
-xcopy src\*.json extension\ /Y >nul
-xcopy src\icons extension\icons\ /E /Y >nul
-xcopy src\data extension\data\ /E /Y >nul
-xcopy src\model extension\model\ /E /Y >nul
+echo Copying static files...
+copy /Y manifest.json extension\ >nul
+copy /Y src\popup.html extension\ >nul
+copy /Y src\blocked.jpg extension\ >nul
+copy /Y src\dopeguard.jpg extension\ >nul
+copy /Y src\adult_keywords.js extension\ >nul
 
-echo ✅ Build complete! Load the 'extension' folder in chrome://extensions
+echo Copying icons...
+xcopy /S /Y src\icons\* extension\icons\ >nul
+
+echo Build complete. extension/ is ready.
+endlocal
 pause

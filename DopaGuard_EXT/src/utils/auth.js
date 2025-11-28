@@ -1,63 +1,114 @@
-const API = "http://127.0.0.1:5000";
+// src/utils/auth.js
 
-export function saveToken(token) {
-  return chrome.storage.local.set({ dg_token: token });
+const API = "http://127.0.0.1:5000"; // backend API
+
+// ------------------------------
+//  DEVICE ID GENERATION
+// ------------------------------
+async function getOrCreateDeviceId() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["dg_device_id"], (res) => {
+      let id = res?.dg_device_id;
+
+      if (!id) {
+        id = "dg-" + Math.random().toString(36).slice(2) + Date.now();
+        chrome.storage.local.set({ dg_device_id: id });
+      }
+
+      resolve(id);
+    });
+  });
+}
+
+// ------------------------------
+// TOKEN STORAGE HELPERS
+// ------------------------------
+export function setToken(token) {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.set({ dg_token: token }, () => resolve(true));
+    } catch {
+      resolve(false);
+    }
+  });
 }
 
 export function getToken() {
-  return new Promise((res) => {
-    chrome.storage.local.get(["dg_token"], (d) => {
-      res(d.dg_token || null);
-    });
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(["dg_token"], (res) => {
+        resolve(res?.dg_token || null);
+      });
+    } catch {
+      resolve(null);
+    }
   });
 }
 
 export function clearToken() {
-  return chrome.storage.local.remove("dg_token");
-}
-
-function getDeviceId() {
-  return new Promise((res) => {
-    chrome.storage.local.get(["dg_device"], (d) => {
-      if (d.dg_device) return res(d.dg_device);
-
-      const id = "dg_" + Math.random().toString(36).slice(2);
-      chrome.storage.local.set({ dg_device: id }, () => res(id));
-    });
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.remove(["dg_token"], () => resolve(true));
+    } catch {
+      resolve(false);
+    }
   });
 }
 
+// ------------------------------
+//  EXTENSION LOGIN (FIXED)
+// ------------------------------
 export async function extensionLogin(email, password) {
-  const deviceId = await getDeviceId();
+  try {
+    // Collect device info (WHAT BACKEND NEEDS)
+    const deviceId = await getOrCreateDeviceId();
+    const deviceInfo = {
+      deviceId,
+      os: navigator.platform,
+      browser: navigator.userAgent,
+    };
 
-  const r = await fetch(`${API}/api/extension/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      password,
-      deviceInfo: {
-        deviceId,
-        os: navigator.userAgent,
-        browser: "Chrome Extension",
-      },
-    }),
-  });
+    const res = await fetch(`${API}/api/extension/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, deviceInfo }),
+    });
 
-  const data = await r.json();
-  if (!data.success) throw new Error(data.message);
+    const data = await res.json().catch(() => ({}));
 
-  await saveToken(data.token);
-  return data;
+    if (res.ok && data.token) {
+      await setToken(data.token);
+      return { success: true, data };
+    }
+
+    return { success: false, data };
+  } catch (err) {
+    return { success: false, error: err.message || "Network error" };
+  }
 }
 
+// ------------------------------
+//  VERIFY TOKEN
+// ------------------------------
 export async function verifyExtensionToken() {
-  const token = await getToken();
-  if (!token) return { success: false };
+  try {
+    const token = await getToken();
+    if (!token) return { success: false, message: "No token" };
 
-  const r = await fetch(`${API}/api/extension/verify`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+    const res = await fetch(`${API}/api/extension/verify`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-  return await r.json();
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) await clearToken();
+      return { success: false, data, status: res.status };
+    }
+
+    return { success: true, ...data };
+  } catch (err) {
+    return { success: false, error: err.message || "Network error" };
+  }
 }

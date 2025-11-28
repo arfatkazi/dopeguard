@@ -1,4 +1,4 @@
-import { getToken } from "./utils/auth.js";
+import { getToken } from "./auth.js";
 
 const API = "http://127.0.0.1:5000";
 

@@ -2,12 +2,12 @@
   "manifest_version": 3,
   "name": "DopeGuard 🧠 AI Shield",
   "version": "1.0.0",
-  "description": "Blocks NSFW sites, base64 images, and videos using AI. Focused. Disciplined. Protected.",
+  "description": "Blocks NSFW sites, base64 images, and videos using AI.",
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["http://127.0.0.1:5000/*", "http://localhost:5000/*"],
 
   "background": {
-    "service_worker": "background.bundle.js"
+    "service_worker": "background.js"
   },
 
   "action": {
@@ -16,21 +16,29 @@
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
-    },
-    "default_title": "DopeGuard Shield"
+    }
   },
 
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content_entry.js"],
-      "run_at": "document_idle"
+      "js": ["libs/tf.min.js", "libs/nsfwjs.min.js", "content_entry.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
     }
   ],
 
   "web_accessible_resources": [
     {
-      "resources": ["dopeguard.jpg", "blocked.jpg"],
+      "resources": [
+        "libs/tf.min.js",
+        "libs/nsfwjs.min.js",
+        "dopeguard.jpg",
+        "blocked.jpg",
+        "icons/*",
+        "model/*",
+        "*.wasm"
+      ],
       "matches": ["<all_urls>"]
     }
   ],

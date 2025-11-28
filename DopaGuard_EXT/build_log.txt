@@ -1,0 +1,7 @@
+Cleaning old build 
+ 
+Bundling content_entry.js ... 
+
+  extension\content_entry.js  38.8mb
+
+Done in 4040ms

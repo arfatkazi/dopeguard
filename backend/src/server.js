@@ -31,13 +31,31 @@ const PORT = process.env.PORT || 5000;
 // =============================================================
 // 🌍 CORS Configuration — FIXED for localhost cookie sharing
 // =============================================================
-const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // mobile / curl / postman
+      // allow curl/postman (no origin)
+      if (!origin) return callback(null, true);
+
+      // allow known local dev hosts
       if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      // allow chrome extension pages in dev
+      try {
+        if (origin.startsWith("chrome-extension://"))
+          return callback(null, true);
+      } catch (e) {}
+
+      // optionally allow all during dev (uncomment if you prefer)
+      // if (process.env.NODE_ENV !== 'production') return callback(null, true);
+
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,

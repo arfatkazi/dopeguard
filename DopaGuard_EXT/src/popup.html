@@ -3,21 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <title>DopeGuard Login</title>
+    <style>
+      body {
+        background: #0b0d12;
+        color: #e4f5ff;
+        font-family: "Inter", sans-serif;
+        width: 280px;
+        padding: 20px;
+        text-align: center;
+      }
+      input {
+        width: 90%;
+        padding: 8px;
+        margin: 6px 0;
+        background: #141a25;
+        border: 1px solid #2cf9a3;
+        border-radius: 6px;
+        color: white;
+      }
+      button {
+        width: 95%;
+        padding: 8px;
+        margin-top: 10px;
+        background: #2cf9a3;
+        color: #0b0d12;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+    </style>
   </head>
-
   <body>
-    <h3>DopeGuard Shield</h3>
-
+    <h2>DopeGuard Shield</h2>
     <p id="dg-status">Checking...</p>
-
     <form id="dg-login-form">
       <input id="dg-email" type="email" placeholder="Email" />
       <input id="dg-password" type="password" placeholder="Password" />
       <button type="submit">Login</button>
     </form>
-
     <button id="dg-logout" style="display: none">Logout</button>
-
-    <script src="popup.bundle.js"></script>
+    <!-- Matches esbuild output: popup.js -->
+    <script src="popup.js"></script>
   </body>
 </html>

@@ -1,88 +1,89 @@
-// =============================================================
-// 🧠 DopeGuard — Background Service Worker (v3 Extreme Defense)
-// =============================================================
-// Handles block counters, mode persistence, and auto-reset
-// Keeps DopeGuard alive, stable, and ready for real-time AI defense
+console.log("🧠 DopeGuard Background Loaded");
 
-chrome.runtime.onInstalled.addListener((details) => {
-  console.log("🧠 DopeGuard Installed — Always ON Protection");
-
-  // Initialize storage values
-  chrome.storage.local.set({
-    blocksToday: 0,
-    mode: "Auto",
-    lastReset: Date.now(),
-  });
-
-  if (details.reason === "install") {
-    console.log("✨ Fresh install detected");
-  }
-});
-
-// =============================================================
-// 📊 Handle Messages from Content Script
-// =============================================================
+// SINGLE MESSAGE LISTENER FOR EVERYTHING
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !msg.action) return false;
 
-  switch (msg.action) {
-    // Increment block counter
-    case "incrementBlock":
-      chrome.storage.local.get(["blocksToday"], (data) => {
-        const updated = (data.blocksToday || 0) + 1;
-        chrome.storage.local.set({ blocksToday: updated }, () => {
-          console.log(`🚫 Block count incremented → ${updated}`);
+  // -------------------------
+  // 🔐 Verify Extension Token
+  // -------------------------
+  if (msg.action === "verifyToken") {
+    chrome.storage.local.get(["dg_token"], async (data) => {
+      const token = data.dg_token;
+      if (!token) {
+        return sendResponse({ success: false, active: false });
+      }
+
+      try {
+        const r = await fetch("http://127.0.0.1:5000/api/extension/verify", {
+          headers: { Authorization: `Bearer ${token}` },
         });
-      });
-      break;
-
-    // Return stats to popup
-    case "getStats":
-      chrome.storage.local.get(["blocksToday", "mode", "lastReset"], (data) => {
-        sendResponse({
-          blocksToday: data.blocksToday || 0,
-          mode: data.mode || "Auto",
-          lastReset: data.lastReset || Date.now(),
-        });
-      });
-      return true; // keeps message channel alive
-
-    // Manual counter reset (optional from popup)
-    case "resetCounter":
-      chrome.storage.local.set(
-        { blocksToday: 0, lastReset: Date.now() },
-        () => {
-          console.log("♻️ Manual counter reset by user");
-          sendResponse({ success: true });
-        }
-      );
-      return true;
-
-    default:
-      console.warn("⚠️ Unknown message:", msg);
+        const json = await r.json();
+        sendResponse(json);
+      } catch (err) {
+        sendResponse({ success: false, active: false });
+      }
+    });
+    return true;
   }
 
-  sendResponse({ success: true });
-  return true;
+  // -------------------------
+  // 🚫 Increment Block Counter
+  // -------------------------
+  if (msg.action === "incrementBlock") {
+    chrome.storage.local.get(["blocksToday"], (data) => {
+      const updated = (data.blocksToday || 0) + 1;
+      chrome.storage.local.set({ blocksToday: updated }, () => {
+        console.log(`🚫 Block count incremented → ${updated}`);
+      });
+    });
+    sendResponse({ success: true });
+    return true;
+  }
+
+  // -------------------------
+  // 📊 Get Stats (popup)
+  // -------------------------
+  if (msg.action === "getStats") {
+    chrome.storage.local.get(["blocksToday", "mode", "lastReset"], (data) => {
+      sendResponse({
+        blocksToday: data.blocksToday || 0,
+        mode: data.mode || "Auto",
+        lastReset: data.lastReset || Date.now(),
+      });
+    });
+    return true;
+  }
+
+  // -------------------------
+  // ♻️ Reset block counter
+  // -------------------------
+  if (msg.action === "resetCounter") {
+    chrome.storage.local.set({ blocksToday: 0, lastReset: Date.now() }, () => {
+      console.log("♻️ Counter reset");
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  return false;
 });
 
-// =============================================================
-// ⏰ Auto-reset block counter every 24 hours
-// =============================================================
+// -----------------------------------------
+// ⏰ Auto-reset daily
+// -----------------------------------------
 const ONE_HOUR = 60 * 60 * 1000;
 setInterval(() => {
   chrome.storage.local.get(["lastReset"], (data) => {
     const now = Date.now();
     if (!data.lastReset || now - data.lastReset > 24 * 60 * 60 * 1000) {
       chrome.storage.local.set({ blocksToday: 0, lastReset: now });
-      console.log("🕛 DopeGuard: Block counter reset for new day");
+      console.log("🕛 Block counter reset for new day");
     }
   });
 }, ONE_HOUR);
 
-// =============================================================
-// ❤️ Keep service worker alive (heartbeat ping)
-// =============================================================
-setInterval(() => {
-  chrome.runtime.getPlatformInfo(() => {});
-}, 5 * 60 * 1000);
+// -----------------------------------------
+// ❤️ Keep SW alive
+// -----------------------------------------
+setInterval(() => chrome.runtime.getPlatformInfo(() => {}), 3 * 60 * 1000);
