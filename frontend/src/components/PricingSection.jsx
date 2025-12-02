@@ -56,7 +56,7 @@ export default function PricingSection() {
   ];
 
   return (
-    <section className="relative py-28 overflow-hidden -m-35 ">
+    <section className="relative py-28 overflow-hidden px-4 sm:px-6 lg:px-0 ">
       <motion.div
         className="text-center mb-16 relative z-10"
         initial={{ opacity: 0, y: 25 }}
@@ -67,13 +67,13 @@ export default function PricingSection() {
         <h2 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
           Choose Your Focus Path
         </h2>
-        <p className="text-white/70 mt-3 max-w-2xl mx-auto text-lg">
+        <p className="text-white/70 mt-3 max-w-2xl mx-auto text-base sm:text-lg">
           Unlock your peak focus potential with adaptive AI and dopamine
           regulation technology.
         </p>
       </motion.div>
 
-      <div className="container grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
+      <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
         {plans.map((plan, i) => (
           <motion.div
             key={plan.title}
@@ -83,7 +83,7 @@ export default function PricingSection() {
             transition={{ duration: 0.6, delay: i * 0.1 }}
             className={`relative rounded-2xl p-[2px] bg-gradient-to-br ${plan.color} border border-white/10 backdrop-blur-xl`}
           >
-            <div className="bg-gradient-to-b from-white/5 to-white/0 rounded-2xl p-8 h-full flex flex-col justify-between">
+            <div className="bg-gradient-to-b from-white/5 to-white/0 rounded-2xl p-6 sm:p-8 h-full flex flex-col justify-between">
               <div className="flex items-center gap-3 mb-3">
                 {plan.icon}
                 <h3 className="text-lg font-semibold text-white">
@@ -91,7 +91,7 @@ export default function PricingSection() {
                 </h3>
               </div>
 
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-white/60 text-sm mb-4 leading-relaxed">
                 {plan.features.join(", ")}
               </p>
 

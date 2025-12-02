@@ -188,20 +188,20 @@ export const forgotPassword = async (req, res) => {
     // Generate raw token
     const resetToken = crypto.randomBytes(32).toString("hex");
 
-    // HASH IT BEFORE SAVING (this is the FIX)
+    // Hash before saving
     const hashedToken = crypto
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
 
-    user.resetToken = hashedToken; // save hashed
-    user.resetTokenExpiry = Date.now() + 1000 * 60 * 15;
+    user.resetToken = hashedToken;
+    user.resetTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 min
 
     await user.save({ validateBeforeSave: false });
 
-    const resetURL = `${process.env.RESET_URL}?token=${resetToken}`; // send raw
+    const resetURL = `${process.env.RESET_URL}?token=${resetToken}`;
 
-    await sendEmail(
+    const sent = await sendEmail(
       user.email,
       "Reset your DopeGuard password",
       `
@@ -211,10 +211,14 @@ export const forgotPassword = async (req, res) => {
       `
     );
 
-    res.json({ message: "Password reset link sent" });
+    if (!sent) {
+      return res.status(500).json({ message: "Email failed to send" });
+    }
+
+    return res.json({ success: true, message: "Password reset link sent" });
   } catch (err) {
     console.error("❌ Forgot Password Error:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -227,7 +231,17 @@ export const resetPassword = async (req, res) => {
     if (!password)
       return res.status(400).json({ message: "Password required" });
 
-    // Hash token to compare with DB
+    // OPTIONAL: Validate strong password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must include uppercase, lowercase, number, and special character",
+      });
+    }
+
+    // Hash incoming token to match DB
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
@@ -239,7 +253,7 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // Set new password
+    // Save new password
     user.password = password;
     user.resetToken = null;
     user.resetTokenExpiry = null;
@@ -251,13 +265,13 @@ export const resetPassword = async (req, res) => {
 
     res.cookie("token", jwt, {
       httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: "Password reset successful",
       user: {
@@ -268,6 +282,6 @@ export const resetPassword = async (req, res) => {
     });
   } catch (err) {
     console.error("Reset Password Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

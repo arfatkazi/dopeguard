@@ -48,7 +48,7 @@ export default function Pricing() {
           />
 
           {/* Subtitle */}
-          <p className="text-white/70 max-w-2xl mx-auto text-lg leading-relaxed">
+          <p className="text-white/70 max-w-2xl mx-auto text-lg leading-relaxed -mb-30">
             Choose the perfect plan for your focus journey — from mindful
             starter to elite mastery. Every tier is built to protect your
             attention and enhance your productivity.
@@ -69,7 +69,7 @@ export default function Pricing() {
 
       {/* 🌙 Footer Note */}
       <motion.div
-        className="text-center py-10 text-white/40 text-sm"
+        className="text-center py-10 text-white/90 text-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.8 }}
