@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { Shield, BarChart3, Zap, Crown, Settings } from "lucide-react";
+import { Shield, BarChart3, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // 🧠 Fetch logged-in user details
+  // 🧠 Always fetch latest backend data (fix for Phase 5)
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -17,23 +17,28 @@ export default function Dashboard() {
           `${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`,
           { withCredentials: true }
         );
-        setUser(data.user);
+
+        if (data.success) {
+          setUser(data.user);
+          localStorage.setItem("user", JSON.stringify(data.user)); // sync
+        }
       } catch (error) {
         console.error("❌ Failed to fetch user:", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchUser();
   }, []);
 
-  // 🛑 Detect if subscription expired
+  // 🛑 Detect ACTIVE status using backend expiry
   const isActive =
     user?.subscriptionStatus === "active" &&
     user?.planExpiry &&
     new Date(user.planExpiry) > new Date();
 
-  // 🚨 Auto redirect if INACTIVE
+  // 🚨 Redirect only **after** loading is done
   useEffect(() => {
     if (!loading && user) {
       const expired =
@@ -47,22 +52,13 @@ export default function Dashboard() {
     }
   }, [loading, user, navigate]);
 
-  // 💳 Billing / Renew plan
-  const handleManageBilling = async () => {
-    try {
-      navigate("/upgrade");
-    } catch (error) {
-      alert("❌ Could not open plans page.");
-    }
-  };
+  const handleManageBilling = () => navigate("/upgrade");
 
   return (
     <main className="relative min-h-screen bg-[#050913] text-white pt-24 pb-20 overflow-hidden">
-      {/* 🌌 Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 blur-[180px] opacity-60 pointer-events-none" />
 
       <section className="container relative z-10">
-        {/* 🧠 Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
@@ -79,7 +75,6 @@ export default function Dashboard() {
             👋
           </p>
 
-          {/* 🔥 STATUS BADGE */}
           {user && (
             <p className="mt-2 text-lg">
               Status:{" "}
@@ -96,9 +91,8 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* 🧩 Main Dashboard Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* 🧠 Focus Insights */}
+          {/* Focus Insights */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
@@ -116,7 +110,7 @@ export default function Dashboard() {
             </p>
           </motion.div>
 
-          {/* 🛡️ Shield Status */}
+          {/* Shield Status */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
@@ -137,7 +131,7 @@ export default function Dashboard() {
             </p>
           </motion.div>
 
-          {/* 💎 Subscription Card */}
+          {/* Subscription Card */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
@@ -153,7 +147,10 @@ export default function Dashboard() {
             ) : user ? (
               <>
                 <p className="text-white/70">
-                  Plan: <span className="text-cyan-400">{user.plan}</span>
+                  Plan:{" "}
+                  <span className="text-cyan-400">
+                    {user.plan || "Free User"}
+                  </span>
                 </p>
                 <p className="text-white/70 mb-3">
                   Expiry:{" "}
@@ -178,7 +175,7 @@ export default function Dashboard() {
             )}
           </motion.div>
 
-          {/* 📈 Focus Trend */}
+          {/* Focus Trend */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}

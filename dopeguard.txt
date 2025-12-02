@@ -1315,7 +1315,7 @@ You have already completed the things beginners NEVER finish:
 This is REAL SaaS-level progress.
 
 
-2dec/12/2025
+2 Dec/12/2025
 -----------------------------------------------------------------------------------------------------------------
 
 ✅ What I actually read (files confirmed)
@@ -1326,8 +1326,15 @@ Frontend: razorpay.js, PricingSection.jsx, PricingCard.jsx, Success.jsx, Payment
 Extension: content_entry.js, background.js, popup.js, auth.js, api.js, manifest.json, tf.min.js, nsfwjs.min.js, model.json + shards, UI files (popup.html), images.
 
 (If you want a plain list file-by-file I can paste it — but I’ve used them to build the phase map below.)
+-------------------------------------------------------------------------------------------------------------------------------
+
+
 
 CLEAN, FILE-BACKED PHASE REPORT (corrected)
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
 PHASE 1 — AUTHENTICATION (Backend + Frontend)
 
 Status: COMPLETE — 100%
@@ -1345,6 +1352,13 @@ frontend login/register components, axios withCredentials configuration.
 jwt.js util present.
 
 Verdict: works end-to-end — tokens, verify, cookies handled.
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
 
 PHASE 2 — RAZORPAY PAYMENTS (Backend + Frontend)
 
@@ -1367,6 +1381,13 @@ Frontend refresh of user data after payment: After /verify-payment success, fron
 Auto-expiry logic: no cron/auto-expire. This is optional but recommended. Implement either server-side cron or compute expiry on read (both acceptable). Suggested file: backend/src/middleware/requireActiveSubscription.js or create jobs/expiryJob.js.
 
 Verdict: payments work and persist plan; add the two small fixes above to be fully robust.
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
 
 PHASE 3 — EXTENSION ↔ BACKEND AUTH & VERIFY
 
@@ -1407,6 +1428,14 @@ Implement POST /api/extension/login that authenticates and writes devices array 
 
 Verdict: extension core is built, but server endpoints for extension auth/verify need to return the exact fields and save device info.
 
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
 PHASE 4 — NSFW MODEL & CONTENT SHIELD (Extension content script)
 
 Status: COMPLETE (functionally strong) — 95%
@@ -1424,6 +1453,14 @@ Ensure MODEL_PATH resolves to correct extension path (model/model.json) and mani
 Cross-origin images are loaded with img.crossOrigin = "anonymous" — okay but some hosts block CORS; current code falls back gracefully.
 
 Verdict: extension blocking engine is production-ready. Minor manifest/resource config check recommended.
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
 
 PHASE 5 — DASHBOARD / FRONTEND POST-PAYMENT SYNC & UI
 
@@ -1444,6 +1481,14 @@ Dashboard.jsx exists but does not display plan details, expiry, or device list. 
 Action:
 
 After successful verify in razorpay.js, call /api/auth/verify and update app state / localStorage. Then render plan info in Dashboard.
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
 
 PHASE 6 — PASSWORD RESET & EMAILS
 
@@ -1467,9 +1512,11 @@ Action:
 
 Wire SMTP env vars in .env, test sendEmail.send() call path.
 
+-------------------------------------------------------------------------------------------------------------------------------
 
 
 
+-------------------------------------------------------------------------------------------------------------------------------
 
 PHASE 7 — WEBHOOK (Razorpay)
 
@@ -1480,6 +1527,13 @@ Observation:
 Your current flow uses frontend verifyPayment (client → server verification) with HMAC check. That is sufficient for one-off payments. Webhooks are optional and recommended if you plan to support refunds, automated events, or to make server the single source of truth.
 
 If you want a webhook later implement routes/webhookRoutes.js and include notes: { plan } when creating order.
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
 
 PHASE 8 — DEPLOYMENT & PRODUCTION HARDENING
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -10,7 +11,7 @@ export default function Success() {
     orderId: "",
     amount: "",
     expiry: "",
-    verified: true,
+    verified: false,
   });
 
   useEffect(() => {
@@ -18,26 +19,38 @@ export default function Success() {
     const orderId = params.get("order_id") || localStorage.getItem("order_id");
     const amount = params.get("amount") || localStorage.getItem("amount");
 
-    if (plan && orderId && amount) {
-      // Estimate expiry (fallback)
-      const durationMap = {
-        STARTER: 30,
-        FOCUS_PACK: 90,
-        GROWTH: 180,
-        ELITE: 365,
-      };
-      const days = durationMap[plan] || 30;
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + days);
+    // Store basic details first
+    setDetails((prev) => ({
+      ...prev,
+      plan,
+      orderId,
+      amount: `₹${(Number(amount) / 100).toFixed(2)}`,
+    }));
 
-      setDetails({
-        plan,
-        orderId,
-        amount: `₹${(Number(amount) / 100).toFixed(2)}`,
-        expiry: expiryDate.toLocaleDateString(),
-        verified: true,
+    // ⚡ Fetch REAL expiry from backend
+    axios
+      .get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        if (res.data.success) {
+          const u = res.data.user;
+
+          // Save updated user session locally
+          localStorage.setItem("user", JSON.stringify(u));
+
+          setDetails((prev) => ({
+            ...prev,
+            expiry: new Date(u.planExpiry).toLocaleDateString(),
+            verified: true,
+          }));
+        } else {
+          setDetails((prev) => ({ ...prev, verified: false }));
+        }
+      })
+      .catch(() => {
+        setDetails((prev) => ({ ...prev, verified: false }));
       });
-    }
   }, [params]);
 
   return (
@@ -70,14 +83,14 @@ export default function Success() {
           </p>
           <p>
             <span className="text-white font-semibold">Plan Expiry:</span>{" "}
-            {details.expiry}
+            {details.expiry || "Loading..."}
           </p>
           <p>
             <span className="text-white font-semibold">Verification:</span>{" "}
             {details.verified ? (
               <span className="text-green-400 font-medium">Verified ✅</span>
             ) : (
-              <span className="text-red-400 font-medium">Pending ⏳</span>
+              <span className="text-yellow-400 font-medium">Checking… ⏳</span>
             )}
           </p>
         </div>
