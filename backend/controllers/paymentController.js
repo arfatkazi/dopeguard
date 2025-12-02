@@ -56,7 +56,14 @@ export const verifyPayment = async (req, res) => {
     // ✅ Update user plan in MongoDB
     const user = await User.findById(req.user?.id);
     if (user) {
+      const prices = {
+        STARTER: 199,
+        FOCUS_PACK: 499,
+        GROWTH: 899,
+        ELITE: 1499,
+      };
       user.plan = plan;
+      user.planPrice = prices[plan] || null;
       user.razorpayOrderId = razorpay_order_id;
       user.razorpayPaymentId = razorpay_payment_id;
       user.razorpaySignature = razorpay_signature;

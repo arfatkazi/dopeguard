@@ -4,7 +4,6 @@
 
 import express from "express";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -15,6 +14,8 @@ import arcjet, { shield, detectBot, tokenBucket } from "@arcjet/node";
 import { isSpoofedBot } from "@arcjet/inspect";
 import connectDB from "../config/db.js";
 import extensionRoutes from "../routes/extensionRoutes.js";
+import cron from "node-cron";
+import { expireSubscriptions } from "./jobs/expiryJob.js";
 
 // ✅ Load environment variables first
 dotenv.config();
@@ -27,6 +28,11 @@ import paymentRoutes from "../routes/paymentRoutes.js";
 // ✅ Initialize Express App
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+cron.schedule("0 * * * *", () => {
+  // runs every hour
+  expireSubscriptions();
+});
 
 // =============================================================
 // 🌍 CORS Configuration — FIXED for localhost cookie sharing

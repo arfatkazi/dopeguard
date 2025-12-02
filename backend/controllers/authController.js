@@ -147,6 +147,16 @@ export const verifyToken = async (req, res) => {
         .status(404)
         .json({ success: false, message: "User not found" });
 
+    // ⭐ AUTO-EXPIRE LOGIC (IMPORTANT FIX)
+    if (
+      user.planExpiry &&
+      user.subscriptionStatus === "active" &&
+      user.planExpiry < new Date()
+    ) {
+      user.subscriptionStatus = "expired";
+      await user.save();
+    }
+
     res.json({ success: true, user });
   } catch (error) {
     console.error("Verify error:", error);

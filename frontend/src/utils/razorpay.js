@@ -84,6 +84,14 @@ export const initiateRazorpayPayment = async (plan) => {
           );
 
           if (verifyPayment.data.success) {
+            // ✅ Refresh user data from backend
+            const refreshed = await axios.get(`${BACKEND}/api/auth/verify`, {
+              withCredentials: true,
+            });
+
+            if (refreshed.data.success) {
+              localStorage.setItem("user", JSON.stringify(refreshed.data.user));
+            }
             localStorage.setItem("plan", plan);
             localStorage.setItem("order_id", response.razorpay_order_id);
             localStorage.setItem("amount", order.amount);

@@ -78,7 +78,8 @@ export const extensionLogin = async (req, res) => {
   }
 };
 
-/* ------------------------ EXTENSION VERIFY ------------------------------- */
+/* --------------------------- EXTENSION VERIFY  ----------------------------- */
+
 export const extensionVerify = async (req, res) => {
   try {
     // Disable cache ALWAYS (fixes 304 bug)
@@ -115,11 +116,13 @@ export const extensionVerify = async (req, res) => {
       });
     }
 
-    const now = new Date();
-
-    // expired plan
-    if (user.planExpiry && user.planExpiry < now) {
-      user.subscriptionStatus = "inactive";
+    // ⭐ AUTO-EXPIRE LOGIC (IMPORTANT FIX)
+    if (
+      user.planExpiry &&
+      user.subscriptionStatus === "active" &&
+      user.planExpiry < new Date()
+    ) {
+      user.subscriptionStatus = "expired";
       await user.save();
 
       return res.json({
