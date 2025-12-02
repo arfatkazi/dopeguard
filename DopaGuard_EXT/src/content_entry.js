@@ -1,21 +1,46 @@
-// src/content_entry.js
-// DopeGuard — Extreme Defense Mode (v3.0, FINAL)
-// ⚠ Unbypassable edition — lazy model loaded from local extension model folder
-// Load TF + NSFW as global scripts
+// ===============================================================
+// DopeGuard — Extreme Defense Mode (v3.0, FIXED PRODUCTION BUILD)
+// ===============================================================
 
+// ----------------------------
+// DISABLE SHIELD (INACTIVE PLAN)
+// ----------------------------
+
+import * as tf from "@tensorflow/tfjs";
+import * as nsfwjs from "nsfwjs";
+
+tf.disableDeprecationWarnings();
+
+// Required for CSP-safe WASM backend:
+tf.env().set("IS_BROWSER", true);
+tf.env().set("IS_NODE", false);
+
+// No WASM flags — removed
+
+function disableShield() {
+  console.log("DopeGuard: Shield disabled due to inactive subscription.");
+  window.__DOPEGUARD_ACTIVE = false;
+
+  if (window.__DG_OBSERVER) {
+    window.__DG_OBSERVER.disconnect();
+  }
+
+  const blackout = document.getElementById("dopa-blackout");
+  if (blackout) blackout.remove();
+
+  console.warn("❌ DopeGuard is OFF — subscription inactive.");
+}
+
+// DO NOT block extension at global top-level (BUG FIXED)
+// Now subscription check happens inside init()
+
+// Utility URL loader
 function safeURL(path) {
   try {
     return chrome?.runtime?.getURL(path) || path;
-  } catch (e) {
+  } catch {
     return path;
   }
-}
-
-function injectScript(filePath) {
-  const s = document.createElement("script");
-  s.src = safeURL(filePath);
-  s.type = "text/javascript";
-  document.documentElement.appendChild(s);
 }
 
 import { ADULT_KEYWORDS } from "./adult_keywords.js";
@@ -28,17 +53,17 @@ const SCAN_INTERVAL_MS = 700;
 const MIN_IMAGE_SIZE = 80;
 const SRC_CACHE = new Map();
 let nsfwModel = null;
-window.__DopaGuardActive = true;
+window.__DOPEGUARD_ACTIVE = true;
 
-// MODEL: local path inside extension (you must include model files in extension/model/)
-const MODEL_PATH = chrome?.runtime?.getURL
-  ? safeURL("model/model.json")
-  : "model/model.json";
+// Model file (must exist inside extension/model/)
+const MODEL_PATH = safeURL("model/model.json");
 
 /* =============================================================
-   SAFE DOMAINS (your curated list)
+   SAFE_DOMAINS PLACEHOLDER (YOU WILL PASTE IT HERE)
    ============================================================= */
 const SAFE_DOMAINS = new Set([
+  /* ← PASTE YOUR SAFE_DOMAINS ARRAY HERE */
+
   "gmail.com",
   "outlook.com",
   "office.com",
@@ -391,10 +416,10 @@ const SAFE_DOMAINS = new Set([
 ]);
 
 /* =============================================================
-   RISKY DOMAINS: precompile regexes to avoid allocating per navigation
-   (keeps semantics identical to your big list but faster)
+   RISKY_WORDS PLACEHOLDER (YOU WILL PASTE IT HERE)
    ============================================================= */
 const RISKY_WORDS = [
+  /* ← PASTE YOUR RISKY_WORDS ARRAY HERE */
   "porn",
   "sex",
   "xxx",
@@ -744,27 +769,15 @@ const RISKY_WORDS = [
   // (add any other specific tokens you absolutely must include)
 ];
 
-// compile into a single regex anchored word boundaries — safer and faster to test
+// compile regex
 const RISKY_REGEX = new RegExp(
-  RISKY_WORDS.map(
-    (w) =>
-      w
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // escape meta
-        .replace(/\\\./g, "\\.") // keep literal dots
-  ).join("|"),
+  RISKY_WORDS.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
   "i"
 );
 
 /* =============================================================
    UTILITIES
    ============================================================= */
-function safeGetURL(path) {
-  try {
-    if (chrome?.runtime?.getURL) return safeURL(path);
-  } catch {}
-  return path;
-}
-
 function getImageSrc(el) {
   try {
     const styleBg = getComputedStyle(el).backgroundImage || "";
@@ -795,8 +808,9 @@ function isSafeElement(el) {
 
 function replaceWithBlocked(el) {
   try {
-    const imgUrl = safeGetURL("dopeguard.jpg");
+    const imgUrl = safeURL("dopeguard.jpg");
     if (!el) return;
+
     if (el.tagName === "IMG") {
       el.src = imgUrl;
       el.srcset = "";
@@ -809,7 +823,9 @@ function replaceWithBlocked(el) {
       );
       el.innerHTML = "";
     }
+
     el.style.filter = "none";
+
     try {
       chrome.runtime.sendMessage({ action: "incrementBlock" });
     } catch {}
@@ -821,23 +837,20 @@ function replaceWithBlocked(el) {
    ============================================================= */
 function detectBase64Images() {
   try {
-    const imgs = Array.from(document.querySelectorAll("img"));
-    imgs.forEach((el) => {
-      try {
-        const src = el.src || "";
-        if (src.startsWith("data:image/") && !isSafeElement(el))
-          replaceWithBlocked(el);
-      } catch {}
+    document.querySelectorAll("img").forEach((el) => {
+      const src = el.src || "";
+      if (src.startsWith("data:image/") && !isSafeElement(el)) {
+        replaceWithBlocked(el);
+      }
     });
   } catch {}
 }
 
 function detectCanvasDrawings() {
   try {
-    const canvases = Array.from(document.querySelectorAll("canvas"));
-    canvases.forEach((canvas) => {
+    document.querySelectorAll("canvas").forEach((canvas) => {
       try {
-        const data = canvas.toDataURL && canvas.toDataURL("image/png");
+        const data = canvas.toDataURL?.("image/png");
         if (data && data.includes("base64")) replaceWithBlocked(canvas);
       } catch {}
     });
@@ -846,372 +859,205 @@ function detectCanvasDrawings() {
 
 function detectVideoPreviews() {
   try {
-    const videos = Array.from(document.querySelectorAll("video"));
-    videos.forEach((v) => {
-      try {
-        const poster = v.getAttribute && v.getAttribute("poster");
-        if (
-          poster &&
-          ADULT_KEYWORDS.some((kw) => poster.toLowerCase().includes(kw))
-        ) {
-          replaceWithBlocked(v);
-        }
-      } catch {}
+    document.querySelectorAll("video").forEach((v) => {
+      const poster = v.getAttribute("poster");
+      if (
+        poster &&
+        ADULT_KEYWORDS.some((kw) => poster.toLowerCase().includes(kw))
+      ) {
+        replaceWithBlocked(v);
+      }
     });
   } catch {}
 }
 
 function scanByKeywords() {
   try {
-    const imgs = Array.from(
-      document.querySelectorAll("img, [style*='background-image']")
-    );
+    const imgs = document.querySelectorAll("img, [style*='background-image']");
     imgs.forEach((el) => {
-      try {
-        if (isSafeElement(el)) return;
-        const src = (getImageSrc(el) || "").toLowerCase();
-        if (!src) return;
-        if (ADULT_KEYWORDS.some((kw) => src.includes(kw)))
-          replaceWithBlocked(el);
-      } catch {}
+      if (isSafeElement(el)) return;
+      const src = (getImageSrc(el) || "").toLowerCase();
+      if (!src) return;
+
+      if (ADULT_KEYWORDS.some((kw) => src.includes(kw))) {
+        replaceWithBlocked(el);
+      }
     });
   } catch {}
 }
 
 /* =============================================================
-   RISKY DOMAIN / SEARCH / FUZZY CHECK
+   DOMAIN DETECTION
    ============================================================= */
 function shouldActivate() {
   try {
-    const url = (window.location.href || "").toLowerCase();
-    const title = (document.title || "").toLowerCase();
+    const url = location.href.toLowerCase();
+    const title = document.title.toLowerCase();
 
-    // Skip safe domains
+    // SAFE domains skip scanning entirely
     for (const d of SAFE_DOMAINS) {
       if (url.includes(d)) return false;
     }
 
-    // Direct risky domain regex (fast)
+    // RISKY domain detection
     if (RISKY_REGEX.test(url)) return true;
 
-    // Search query detection (Google/Bing)
+    // Search engines
     try {
       const q = new URLSearchParams(window.location.search).get("q") || "";
       if (q.match(/sex|porn|fuck|xxx|nude|hentai|adult/i)) return true;
     } catch {}
 
-    // Fuzzy ADULT_KEYWORDS detection (collapse repeated letters)
+    // fuzzy keyword detection
     for (const kw of ADULT_KEYWORDS) {
-      const fuzzy = kw.replace(/(.)\1+/g, "$1").replace(/[^a-z0-9]/gi, "");
-      const normalizedUrl = url.replace(/(.)\1+/g, "$1");
-      const normalizedTitle = title.replace(/(.)\1+/g, "$1");
-      if (
-        (fuzzy &&
-          normalizedUrl.includes(fuzzy) &&
-          /porn|sex|fuck|xxx|nude|hentai|nsfw|adult/.test(normalizedUrl)) ||
-        (fuzzy &&
-          normalizedTitle.includes(fuzzy) &&
-          /porn|sex|fuck|xxx|nude|hentai|nsfw|adult/.test(normalizedTitle))
-      ) {
-        return true;
+      const fuzzy = kw.replace(/(.)\1+/g, "$1");
+      if (url.includes(fuzzy) || title.includes(fuzzy)) {
+        if (/porn|sex|xxx|nsfw|hentai|adult|fuck|nude/.test(url + title))
+          return true;
       }
     }
   } catch {}
+
   return false;
 }
 
 /* =============================================================
-   SHIELD (UNBYPASSABLE): UI, DevTools trap, console override, self-heal
+   SHIELD BLOCKING
    ============================================================= */
 function createShield() {
   const shield = document.createElement("div");
   shield.id = "dopa-blackout";
   shield.style.cssText = `
-    position:fixed;inset:0;width:100vw;height:100vh;
+    position:fixed;inset:0;z-index:2147483647;
     background:radial-gradient(circle at center,#0b0d12,#000);
     color:#2cf9a3;display:flex;flex-direction:column;
     align-items:center;justify-content:center;
-    z-index:2147483647;text-align:center;font-family:Inter,system-ui,sans-serif;
-    opacity:0;transition:opacity 0.3s ease;user-select:none;cursor:none;
+    font-family:Inter,system-ui,sans-serif;opacity:0;
+    transition:opacity .3s ease;user-select:none;cursor:none;
   `;
+
   shield.innerHTML = `
-    <style>
-      @keyframes glow {
-        0%{box-shadow:0 0 6px #2cf9a3;}
-        50%{box-shadow:0 0 22px #2cf9a3;}
-        100%{box-shadow:0 0 6px #2cf9a3;}
-      }
-    </style>
-    <img src="${safeGetURL("dopeguard.jpg")}" 
-         style="width:100px;height:100px;border-radius:14px;margin-bottom:20px;animation:glow 2s infinite;" />
+    <img src="${safeURL("dopeguard.jpg")}"
+         style="width:100px;height:100px;border-radius:14px;margin-bottom:20px;">
     <h2 style="color:#cbd6e8;">🧠 DopeGuard Shield Activated</h2>
-    <p style="color:#aebbd0;font-size:0.98rem;margin-top:6px;">
-      Explicit or distracting content detected.<br>
-      Stay focused. Protect your mind. 💪
-    </p>
+    <p style="color:#aebbd0;font-size:.95rem;">Explicit/distracting content detected.</p>
   `;
+
   return shield;
 }
 
 function enforceShield() {
+  if (document.getElementById("dopa-blackout")) return;
+
+  const shield = createShield();
+  document.documentElement.appendChild(shield);
+
+  requestAnimationFrame(() => (shield.style.opacity = "1"));
+
+  // disable interactions
+  const prevent = (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return false;
+  };
+
+  [
+    "contextmenu",
+    "keydown",
+    "keyup",
+    "copy",
+    "cut",
+    "paste",
+    "click",
+    "mousedown",
+    "mouseup",
+  ].forEach((ev) =>
+    document.addEventListener(ev, prevent, { capture: true, passive: false })
+  );
+
   try {
-    if (document.getElementById("dopa-blackout")) return;
-    const shield = createShield();
-    document.documentElement.appendChild(shield);
-    requestAnimationFrame(() => (shield.style.opacity = "1"));
-
-    // Disable interactions
-    const prevent = (e) => {
-      try {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      } catch {}
-      return false;
-    };
-    [
-      "contextmenu",
-      "keydown",
-      "keyup",
-      "copy",
-      "cut",
-      "paste",
-      "click",
-      "mousedown",
-      "mouseup",
-    ].forEach((ev) =>
-      document.addEventListener(ev, prevent, { capture: true, passive: false })
-    );
-
-    try {
-      document.body.style.pointerEvents = "none";
-      document.body.style.overflow = "hidden";
-    } catch {}
-
-    // MutationObserver: restore shield if removed
-    const obs = new MutationObserver(() => {
-      if (!document.getElementById("dopa-blackout")) {
-        try {
-          document.documentElement.appendChild(shield);
-        } catch {}
-      }
-    });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
-
-    // Integrity interval: reattach if missing
-    const integrity = setInterval(() => {
-      if (!document.contains(shield)) {
-        try {
-          document.documentElement.appendChild(shield);
-        } catch {}
-      }
-    }, 500);
-
-    // DevTools trap — highly aggressive: forces about:blank if devtools open
-    const devtoolsCheck = () => {
-      try {
-        const devtools = /./;
-        devtools.toString = function () {
-          // When String(devtools) is requested by console, this executes
-          try {
-            console.warn("🚫 DevTools detected! Locking page.");
-          } catch {}
-          try {
-            location.href = "about:blank";
-          } catch {}
-        };
-        // trigger console evaluation — if console open, this will call toString
-        console.log("%c", devtools);
-      } catch {}
-    };
-    const devtoolsInterval = setInterval(devtoolsCheck, 2000);
-
-    // Disable console methods to make debugging harder
-    ["log", "warn", "error", "info", "debug", "clear"].forEach((fn) => {
-      try {
-        console[fn] = function () {};
-      } catch {}
-    });
-
-    // ensure cleanup is not possible by user code
-    // keep references alive on window
-    try {
-      window.__DG_SHIELD = { obs, integrity, devtoolsInterval, shield };
-    } catch {}
+    document.body.style.pointerEvents = "none";
+    document.body.style.overflow = "hidden";
   } catch {}
+
+  // Self-heal observer
+  const obs = new MutationObserver(() => {
+    if (!document.getElementById("dopa-blackout")) {
+      document.documentElement.appendChild(shield);
+    }
+  });
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+
+  window.__DG_OBSERVER = obs;
 }
 
 /* =============================================================
-   AI MODEL LOADING (lazy) — loads from local MODEL_PATH
+   AI MODEL LOADING
    ============================================================= */
-
 async function ensureModel() {
   if (window.__DGModel) return window.__DGModel;
   if (nsfwModel) return nsfwModel;
 
-  // Build the extension-local model.json URL
-  const modelUrl = (() => {
-    try {
-      return chrome?.runtime?.getURL
-        ? safeURL("model/model.json")
-        : "model/model.json";
-    } catch (e) {
-      return "model/model.json";
-    }
-  })();
-
   try {
-    console.log("🧠 DopeGuard — loading local NSFW model from:", modelUrl);
-
-    // Ensure TF backend (prefer webgl)
     await tf.setBackend("wasm");
     await tf.ready();
 
-    // IMPORTANT: pass the explicit model.json URL so nsfwjs loads from the extension
-    nsfwModel = await nsfwjs.load(modelUrl, { size: 224 });
+    nsfwModel = await nsfwjs.load(MODEL_PATH, { size: 224 });
     window.__DGModel = nsfwModel;
-    console.log("✅ DopeGuard — local model ready");
+
     return nsfwModel;
   } catch (err) {
-    console.warn("DopeGuard — model load failed:", err);
+    console.warn("⚠ NSFW model failed to load:", err);
     return null;
   }
 }
 
-async function classifyElement(el) {
-  try {
-    const src = getImageSrc(el);
-    if (!src) return false;
-    if (SRC_CACHE.has(src)) return SRC_CACHE.get(src);
-
-    // fetch the image into an HTMLImageElement
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = src;
-
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      setTimeout(res, 2000);
-    });
-
-    const model = await ensureModel();
-    if (!model) return false;
-
-    const preds = await model.classify(img);
-    const bad = preds.some(
-      (p) =>
-        ["Porn", "Hentai", "Sexy"].includes(p.className) &&
-        p.probability >= PRED_THRESHOLD
-    );
-    SRC_CACHE.set(src, bad);
-    return bad;
-  } catch (err) {
-    return false;
-  }
-}
-
 /* =============================================================
-   HEURISTICS & CLASSIFICATION LOOP
+   MAIN SCANNING LOOP
    ============================================================= */
-function instantHeuristicBlock(el) {
-  try {
-    const src = (getImageSrc(el) || "").toLowerCase();
-    const alt = (el.alt || "").toLowerCase();
-    const textAround =
-      (
-        el.closest &&
-        (el.closest("a,div,figure")?.innerText || "")
-      ).toLowerCase() || "";
-
-    if (!src) return false;
-
-    const badHints = [
-      "porn",
-      "sex",
-      "boobs",
-      "nude",
-      "hentai",
-      "xxx",
-      "fuck",
-      "anal",
-      "ass",
-      "pussy",
-      "nsfw",
-      "adult",
-      "dick",
-      "cock",
-      "naked",
-      "milf",
-      "cam",
-      "bj",
-    ];
-    for (const w of badHints) {
-      if (src.includes(w) || alt.includes(w) || textAround.includes(w)) {
-        replaceWithBlocked(el);
-        return true;
-      }
-    }
-
-    if (src.startsWith("data:image/") || src.includes("base64")) {
-      replaceWithBlocked(el);
-      return true;
-    }
-
-    if (el.clientWidth > 400 && el.clientHeight > 300 && !isSafeElement(el)) {
-      try {
-        el.style.filter = "blur(25px)";
-        el.dataset.dg_tempBlur = "1";
-      } catch {}
-      return false;
-    }
-  } catch {}
-  return false;
-}
-
 async function classifyBatch(elements) {
-  try {
-    const model = await ensureModel();
-    if (!model) return;
+  const model = await ensureModel();
+  if (!model) return;
 
-    const batch = elements.slice(0, 20);
+  const batch = elements.slice(0, 20);
 
-    await Promise.all(
-      batch.map(async (el) => {
-        try {
-          const src = getImageSrc(el);
-          if (!src || SRC_CACHE.has(src)) return;
+  await Promise.all(
+    batch.map(async (el) => {
+      try {
+        const src = getImageSrc(el);
+        if (!src || SRC_CACHE.has(src)) return;
 
-          SRC_CACHE.set(src, false);
+        SRC_CACHE.set(src, false);
 
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = src;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = src;
 
-          await new Promise((r, rej) => {
-            img.onload = r;
-            img.onerror = rej;
-            setTimeout(r, 2000);
-          });
+        await new Promise((r) => {
+          img.onload = r;
+          img.onerror = r;
+          setTimeout(r, 1500);
+        });
 
-          const preds = await model.classify(img);
-          const bad = preds.some(
-            (r) =>
-              ["Porn", "Hentai", "Sexy"].includes(r.className) &&
-              r.probability >= PRED_THRESHOLD
-          );
+        const preds = await model.classify(img);
+        const bad = preds.some(
+          (p) =>
+            ["Porn", "Hentai", "Sexy"].includes(p.className) &&
+            p.probability >= PRED_THRESHOLD
+        );
 
-          SRC_CACHE.set(src, bad);
-          if (bad) replaceWithBlocked(el);
-        } catch {}
-      })
-    ); // <-- Correct closing
-  } catch {}
+        SRC_CACHE.set(src, bad);
+        if (bad) replaceWithBlocked(el);
+      } catch {}
+    })
+  );
 }
 
 async function scanLoop() {
   try {
     if (document.hidden) return;
-    const host = (window.location.hostname || "").toLowerCase();
+
+    const host = location.hostname.toLowerCase();
     for (const d of SAFE_DOMAINS) if (host.includes(d)) return;
 
     detectBase64Images();
@@ -1222,7 +1068,9 @@ async function scanLoop() {
     const imgs = Array.from(
       document.querySelectorAll("img,[style*='background-image']")
     );
+
     if (imgs.length > 300) return;
+
     const candidates = imgs.filter(
       (el) =>
         !el.dataset.dg_scanned &&
@@ -1230,69 +1078,64 @@ async function scanLoop() {
         el.clientHeight > MIN_IMAGE_SIZE &&
         !isSafeElement(el)
     );
+
     if (!candidates.length) return;
 
-    for (const el of candidates) {
-      try {
-        el.dataset.dg_scanned = "1";
-        if (instantHeuristicBlock(el)) continue;
-      } catch {}
-    }
+    candidates.forEach((el) => {
+      el.dataset.dg_scanned = "1";
+    });
 
-    setTimeout(() => classifyBatch(candidates), 300);
+    classifyBatch(candidates);
   } catch {}
 }
 
 /* =============================================================
-   START / SPA WATCHER
+   INIT (subscription check FIXED)
    ============================================================= */
 (async function init() {
   try {
     const res = await chrome.runtime.sendMessage({ action: "verifyToken" });
+
     if (!res.success || !res.active) {
-      // not active — do not run shield
-      console.warn("DopeGuard disabled — no subscription");
+      console.warn("❌ Subscription inactive — disabling DopeGuard");
+      disableShield();
       return;
     }
 
-    // If shouldActivate decides the page is risky, immediately enforce shield (domain-level blocking)
+    window.__DOPEGUARD_ACTIVE = true;
+
     if (shouldActivate()) {
       enforceShield();
       return;
     }
 
-    // Otherwise, start scanning loop and keep watchers
     const target = document.body || document.documentElement;
     if (!target) {
       setTimeout(init, 500);
       return;
     }
 
-    new MutationObserver(() => {
-      try {
-        scanLoop();
-      } catch {}
-    }).observe(target, { childList: true, subtree: true });
+    new MutationObserver(scanLoop).observe(target, {
+      childList: true,
+      subtree: true,
+    });
 
     setInterval(scanLoop, SCAN_INTERVAL_MS);
-    // initial scan
     scanLoop();
 
-    // SPA URL watcher: run shouldActivate on navigation, and lock if necessary
+    // SPA navigation watcher
     let lastUrl = location.href;
     new MutationObserver(() => {
       if (location.href !== lastUrl) {
         lastUrl = location.href;
-        try {
-          if (shouldActivate()) enforceShield();
-          else scanLoop();
-        } catch {}
+
+        if (shouldActivate()) enforceShield();
+        else scanLoop();
       }
     }).observe(document, { childList: true, subtree: true });
 
     console.log("🛡️ DopeGuard Extreme Mode Active");
   } catch (err) {
-    // fail-safe: if anything throws, ensure we do not leave the page unguarded in certain cases
     try {
       if (shouldActivate()) enforceShield();
     } catch {}

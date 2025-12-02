@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Shield, BarChart3, Zap, Crown, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // 🧠 Fetch logged-in user details
   useEffect(() => {
@@ -25,17 +27,32 @@ export default function Dashboard() {
     fetchUser();
   }, []);
 
-  // 💳 Open Stripe Billing Portal
+  // 🛑 Detect if subscription expired
+  const isActive =
+    user?.subscriptionStatus === "active" &&
+    user?.planExpiry &&
+    new Date(user.planExpiry) > new Date();
+
+  // 🚨 Auto redirect if INACTIVE
+  useEffect(() => {
+    if (!loading && user) {
+      const expired =
+        user.subscriptionStatus !== "active" ||
+        !user.planExpiry ||
+        new Date(user.planExpiry) <= new Date();
+
+      if (expired) {
+        navigate("/upgrade?expired=true");
+      }
+    }
+  }, [loading, user, navigate]);
+
+  // 💳 Billing / Renew plan
   const handleManageBilling = async () => {
     try {
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/subscription/billing-portal`,
-        { withCredentials: true }
-      );
-      if (data.url) window.location.href = data.url;
+      navigate("/upgrade");
     } catch (error) {
-      console.error("Billing portal error:", error);
-      alert("❌ Could not open billing portal. Try again later.");
+      alert("❌ Could not open plans page.");
     }
   };
 
@@ -59,9 +76,24 @@ export default function Dashboard() {
           <p className="text-white/70 mt-3">
             Welcome back,{" "}
             <span className="text-cyan-400 font-semibold">Focus Warrior</span>{" "}
-            👋 Your AI Shield is currently{" "}
-            <span className="text-green-400 font-semibold">Active</span>.
+            👋
           </p>
+
+          {/* 🔥 STATUS BADGE */}
+          {user && (
+            <p className="mt-2 text-lg">
+              Status:{" "}
+              <span
+                className={`px-3 py-1 rounded-lg font-semibold ${
+                  isActive
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-red-500/20 text-red-400"
+                }`}
+              >
+                {isActive ? "ACTIVE" : "INACTIVE"}
+              </span>
+            </p>
+          )}
         </motion.div>
 
         {/* 🧩 Main Dashboard Cards */}
@@ -79,17 +111,12 @@ export default function Dashboard() {
               <BarChart3 size={20} className="text-cyan-400" />
             </div>
             <p className="text-white/70 mb-4">
-              This week:{" "}
-              <span className="text-cyan-400 font-semibold">6h 22m</span>{" "}
-              distraction-free.
+              Weekly Focus:{" "}
+              <span className="text-cyan-400 font-semibold">6h 22m</span>
             </p>
-            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 w-[75%] rounded-full" />
-            </div>
-            <p className="text-xs text-white/50 mt-2">Goal: 8h / week</p>
           </motion.div>
 
-          {/* 🛡️ Active Shield */}
+          {/* 🛡️ Shield Status */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
@@ -101,21 +128,12 @@ export default function Dashboard() {
               </h3>
               <Zap size={20} className="text-cyan-400" />
             </div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
-              <p className="text-white/80">
-                AI Shield:{" "}
-                <span className="text-green-400 font-semibold">Active</span>
-              </p>
-            </div>
-            <p className="text-white/60 text-sm">
-              Last scan blocked{" "}
-              <span className="text-cyan-400 font-medium">12 NSFW visuals</span>{" "}
-              and{" "}
-              <span className="text-cyan-400 font-medium">
-                3 dopamine triggers
+
+            <p className="text-white/80">
+              AI Shield:{" "}
+              <span className="font-semibold">
+                {isActive ? "🟢 Active" : "🔴 Inactive"}
               </span>
-              .
             </p>
           </motion.div>
 
@@ -131,26 +149,13 @@ export default function Dashboard() {
             </div>
 
             {loading ? (
-              <p className="text-white/60">Loading plan...</p>
+              <p className="text-white/60">Loading...</p>
             ) : user ? (
               <>
                 <p className="text-white/70">
-                  Plan:{" "}
-                  <span
-                    className={`font-medium ${
-                      user.plan === "ELITE"
-                        ? "text-yellow-400"
-                        : user.plan === "GROWTH"
-                        ? "text-purple-400"
-                        : user.plan === "FOCUS_PACK"
-                        ? "text-cyan-400"
-                        : "text-white/60"
-                    }`}
-                  >
-                    {user.plan}
-                  </span>
+                  Plan: <span className="text-cyan-400">{user.plan}</span>
                 </p>
-                <p className="text-white/70 mb-4">
+                <p className="text-white/70 mb-3">
                   Expiry:{" "}
                   <span className="text-white">
                     {user.planExpiry
@@ -158,45 +163,36 @@ export default function Dashboard() {
                       : "N/A"}
                   </span>
                 </p>
-                <button
-                  onClick={handleManageBilling}
-                  className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold transition-all"
-                >
-                  Manage Plan
-                </button>
+
+                {!isActive && (
+                  <button
+                    onClick={handleManageBilling}
+                    className="px-5 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-all"
+                  >
+                    Renew Plan
+                  </button>
+                )}
               </>
             ) : (
-              <p className="text-white/60">No user data found</p>
+              <p className="text-white/60">No user found</p>
             )}
           </motion.div>
 
-          {/* 📈 Focus Trend (Beta) */}
+          {/* 📈 Focus Trend */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
             className="md:col-span-2 rounded-2xl bg-gradient-to-b from-white/5 to-white/0 border border-white/10 p-6 backdrop-blur-md shadow-[0_0_25px_rgba(6,182,212,0.1)]"
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-white">
-                Focus Trend (Beta)
-              </h3>
-              <Settings size={20} className="text-cyan-400" />
-            </div>
-            <p className="text-white/60 text-sm mb-4">
-              Coming soon — view your weekly dopamine resistance and focus stats
-              in detail.
+            <h3 className="text-lg font-semibold text-white mb-3">
+              Focus Trend (Beta)
+            </h3>
+            <p className="text-white/60 text-sm">
+              Advanced insights coming soon.
             </p>
-            <div className="w-full h-24 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40">
-              Focus Analytics Graph Placeholder
-            </div>
           </motion.div>
         </div>
       </section>
-
-      {/* 🧾 Footer */}
-      <div className="text-center text-white/40 text-sm mt-12">
-        © {new Date().getFullYear()} DopeGuard — Stay Clean. Stay Focused.
-      </div>
     </main>
   );
 }

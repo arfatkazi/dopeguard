@@ -15,6 +15,7 @@ import PaymentFailed from "./pages/PaymentFailed";
 import Success from "./pages/Success";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Upgrade from "./pages/Upgrade.jsx";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL =
@@ -129,6 +130,7 @@ export default function App() {
             <Route path="/success" element={<Success />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/upgrade" element={<Upgrade />} />
           </Routes>
         </motion.main>
       </AnimatePresence>

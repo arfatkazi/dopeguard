@@ -1,65 +1,59 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-console.log("EXT JWT =", JWT_SECRET?.slice(0, 10)); // TEST
-
+/* ------------------------------ TOKEN MAKER ------------------------------ */
 function makeToken(user) {
   return jwt.sign(
     {
       id: user._id,
       email: user.email,
-      plan: user.plan,
-      planExpiry: user.planExpiry,
-      subscriptionStatus: user.subscriptionStatus,
     },
     JWT_SECRET,
     { expiresIn: "7d" }
   );
 }
 
+/* --------------------------- EXTENSION LOGIN ----------------------------- */
 export const extensionLogin = async (req, res) => {
   try {
-    const { email, password, deviceInfo = {} } = req.body; // <-- FIX HERE
+    const { email, password, deviceInfo = {} } = req.body;
 
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing fields" });
-    }
+    if (!email || !password)
+      return res.status(400).json({
+        success: false,
+        message: "Missing fields",
+      });
 
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user)
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
-    }
 
     const ok = await user.comparePassword(password);
-    if (!ok) {
+    if (!ok)
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
-    }
 
-    // safe deviceInfo handling
+    // register / update device info
     const deviceId = deviceInfo.deviceId || "ext-" + user._id;
-    const os = deviceInfo.os || "Unknown";
-    const browser = deviceInfo.browser || "Chrome";
-
-    const payload = { deviceId, os, browser, lastActive: new Date() };
+    const payload = {
+      deviceId,
+      os: deviceInfo.os || "Unknown",
+      browser: deviceInfo.browser || "Unknown",
+      lastActive: new Date(),
+    };
 
     const idx = user.devices.findIndex((d) => d.deviceId === deviceId);
-    if (idx === -1) {
-      user.devices.push(payload);
-    } else {
-      user.devices[idx] = payload;
-    }
+    if (idx === -1) user.devices.push(payload);
+    else user.devices[idx] = payload;
+
     await user.save();
 
     const token = makeToken(user);
@@ -70,51 +64,104 @@ export const extensionLogin = async (req, res) => {
       token,
       user: {
         email: user.email,
-        plan: user.plan,
+        plan: user.plan || "Free",
         planExpiry: user.planExpiry,
         subscriptionStatus: user.subscriptionStatus,
       },
     });
   } catch (err) {
     console.error("EXT LOGIN ERROR:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
+/* ------------------------ EXTENSION VERIFY ------------------------------- */
 export const extensionVerify = async (req, res) => {
   try {
-    const auth = req.headers.authorization || "";
-    const [, token] = auth.split(" ");
+    // Disable cache ALWAYS (fixes 304 bug)
+    res.setHeader("Cache-Control", "no-store");
+
+    const authorization = req.headers.authorization || "";
+    const token = authorization.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({ success: false, message: "Token missing" });
+      return res.status(401).json({
+        success: false,
+        active: false,
+        message: "Token missing",
+      });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({
+        success: false,
+        active: false,
+        message: "Invalid token",
+      });
+    }
 
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        active: false,
+        message: "User not found",
+      });
     }
 
-    const active =
-      user.subscriptionStatus === "active" &&
-      user.plan &&
-      user.planExpiry &&
-      user.planExpiry > new Date();
+    const now = new Date();
 
+    // expired plan
+    if (user.planExpiry && user.planExpiry < now) {
+      user.subscriptionStatus = "inactive";
+      await user.save();
+
+      return res.json({
+        success: true,
+        active: false,
+        user: {
+          email: user.email,
+          plan: "Expired",
+        },
+        message: "Subscription expired",
+      });
+    }
+
+    // no active subscription
+    if (user.subscriptionStatus !== "active") {
+      return res.json({
+        success: true,
+        active: false,
+        user: {
+          email: user.email,
+          plan: user.plan || "Free",
+        },
+        message: "Subscription inactive",
+      });
+    }
+
+    // ACTIVE
     return res.json({
       success: true,
-      active,
+      active: true,
       user: {
         email: user.email,
-        plan: user.plan,
+        plan: user.plan || "Premium",
         planExpiry: user.planExpiry,
       },
     });
   } catch (err) {
-    return res.status(401).json({ success: false, message: "Invalid token" });
+    console.error("EXT VERIFY ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      active: false,
+      message: "Server error",
+    });
   }
 };

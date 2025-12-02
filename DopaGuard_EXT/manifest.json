@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["libs/tf.min.js", "libs/nsfwjs.min.js", "content_entry.js"],
+      "js": ["libs/tf.min.js", "content_entry.js"],
       "run_at": "document_start",
       "world": "ISOLATED"
     }
