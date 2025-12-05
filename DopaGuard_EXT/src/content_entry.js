@@ -158,6 +158,31 @@ const BLOCKED_SOCIALS = new Set([
   "x.com",
   "twitter.com",
   "www.twitter.com",
+  //social media often used for adult content sharing
+  "https://x.com/",
+  "x.com",
+  "twitter",
+  "twitter.com",
+  "www.twitter.com",
+  "https://www.snapchat.com/",
+  "snapchat",
+  "snapchat.com",
+  "www.snapchat.com",
+  "https://www.instagram.com/",
+  "instagram",
+  "instagram.com",
+  "www.instagram.com",
+  "insta",
+  "instagr.am",
+  "https://www.facebook.com/",
+  "https://www.reddit.com/",
+  "tiktok",
+  "tiktok.com",
+  "www.tiktok.com",
+  "vm.tiktok.com", // shortlinks
+  "t.co", // twitter shortlinks (optional)
+  "m.tiktok.com",
+  "vm.tiktok.com",
 ]);
 
 // Model file (must exist inside extension/model/)
@@ -351,6 +376,9 @@ const SAFE_DOMAINS = new Set([
   "weather.com",
   "speedtest.net",
   "archive.org",
+  "localhost",
+  "127.0.0.1",
+  "dopeguard.vercel.app",
 ]);
 
 function isSafeDomain(hostname) {
@@ -705,31 +733,6 @@ const RISKY_WORDS = [
   ".video",
   ".movie",
 
-  //social media often used for adult content sharing
-  "https://x.com/",
-  "x.com",
-  "twitter",
-  "twitter.com",
-  "www.twitter.com",
-  "https://www.snapchat.com/",
-  "snapchat",
-  "snapchat.com",
-  "www.snapchat.com",
-  "https://www.instagram.com/",
-  "instagram",
-  "instagram.com",
-  "www.instagram.com",
-  "insta",
-  "instagr.am",
-  "https://www.facebook.com/",
-  "https://www.reddit.com/",
-  "tiktok",
-  "tiktok.com",
-  "www.tiktok.com",
-  "vm.tiktok.com", // shortlinks
-  "t.co", // twitter shortlinks (optional)
-  "m.tiktok.com",
-  "vm.tiktok.com",
   // (add any other specific tokens you absolutely must include)
   "girl kissing",
   "girl kiss girl",
@@ -747,10 +750,19 @@ const RISKY_WORDS = [
 ];
 
 // compile regex
-const RISKY_REGEX = new RegExp(
-  RISKY_WORDS.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
-  "i"
-);
+const RISKY_PATTERNS = RISKY_WORDS.map((w) => {
+  const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // For very short plain words, require word boundaries
+  if (/^[a-z]+$/i.test(w) && w.length <= 4) {
+    return `\\b${escaped}\\b`;
+  }
+
+  return escaped;
+});
+
+const RISKY_REGEX = new RegExp(RISKY_PATTERNS.join("|"), "i");
+
 /* =============================================================
    UTILITIES
    ============================================================= */
@@ -905,15 +917,18 @@ function shouldActivate() {
     // Skip whitelisted domains completely
     if (isSafeDomain(host)) return false;
 
-    // Explicitly block social media surfaces
-    for (const social of BLOCKED_SOCIALS) {
-      if (host === social || host.endsWith("." + social.replace(/^\*\./, ""))) {
-        return true;
-      }
-    }
+    if (BLOCKED_SOCIALS.has(host)) return true;
+
+    if (isPornDomain()) return true;
+
+    // // Explicitly block social media surfaces
+    // for (const social of BLOCKED_SOCIALS) {
+    //   if (host === social || host.endsWith("." + social.replace(/^\*\./, ""))) {
+    //     return true;
+    //   }
+    // }
 
     // 🚀 New: Very strong porn detection
-    if (isPornDomain()) return true;
 
     // Query parameters (Google search)
     const q = new URLSearchParams(location.search).get("q") || "";
