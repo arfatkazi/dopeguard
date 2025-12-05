@@ -16,15 +16,42 @@ import {
   fetchDopamineSpikes,
 } from "../services/analyticsService.js";
 
+const loadSnapshot = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (error) {
+    console.warn("Failed to read snapshot", key, error);
+    return fallback;
+  }
+};
+
+const saveSnapshot = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn("Failed to persist snapshot", key, error);
+  }
+};
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [activities, setActivities] = useState([]);
-  const [devices, setDevices] = useState([]);
-  const [weeklyData, setWeeklyData] = useState([]);
-  const [blockedSites, setBlockedSites] = useState([]);
-  const [dopamine, setDopamine] = useState({ spikes: [], threshold: 3 });
+  const [status, setStatus] = useState("");
+  const [activities, setActivities] = useState(() =>
+    loadSnapshot("dg.activities", [])
+  );
+  const [devices, setDevices] = useState(() => loadSnapshot("dg.devices", []));
+  const [weeklyData, setWeeklyData] = useState(() =>
+    loadSnapshot("dg.weekly", [])
+  );
+  const [blockedSites, setBlockedSites] = useState(() =>
+    loadSnapshot("dg.blocked", [])
+  );
+  const [dopamine, setDopamine] = useState(() =>
+    loadSnapshot("dg.dopamine", { spikes: [], threshold: 3 })
+  );
 
   // 🧠 Always fetch latest backend data (fix for Phase 5)
   useEffect(() => {
@@ -52,6 +79,7 @@ export default function Dashboard() {
   // useEffect to load data (after verifying user)
   useEffect(() => {
     const load = async () => {
+      setStatus("");
       try {
         const [aRes, wRes, bRes, dRes, devRes] = await Promise.allSettled([
           fetchActivities({ limit: 20 }),
@@ -62,22 +90,52 @@ export default function Dashboard() {
         ]);
 
         if (aRes.status === "fulfilled" && aRes.value.data.success) {
-          setActivities(aRes.value.data.activities || []);
+          const list = aRes.value.data.activities || [];
+          setActivities(list);
+          saveSnapshot("dg.activities", list);
         }
         if (wRes.status === "fulfilled" && wRes.value.data.success) {
-          setWeeklyData(wRes.value.data.weekly || []);
+          const list = wRes.value.data.weekly || [];
+          setWeeklyData(list);
+          saveSnapshot("dg.weekly", list);
         }
         if (bRes.status === "fulfilled" && bRes.value.data.success) {
-          setBlockedSites(bRes.value.data.sites || []);
+          const list = bRes.value.data.sites || [];
+          setBlockedSites(list);
+          saveSnapshot("dg.blocked", list);
         }
         if (dRes.status === "fulfilled" && dRes.value.data.success) {
-          setDopamine(dRes.value.data || { spikes: [], threshold: 3 });
-          setDopamine(dRes.value.data);
+          const payload = dRes.value.data || { spikes: [], threshold: 3 };
+          setDopamine(payload);
+          saveSnapshot("dg.dopamine", payload);
         }
         if (devRes.status === "fulfilled" && devRes.value.data.success) {
-          setDevices(devRes.value.data.devices || []);
+          const list = devRes.value.data.devices || [];
+          setDevices(list);
+          saveSnapshot("dg.devices", list);
+        }
+
+        const responses = [aRes, wRes, bRes, dRes, devRes];
+        const rateLimited = responses.some(
+          (res) =>
+            res.status === "rejected" && res.reason?.response?.status === 429
+        );
+        const failed = responses.some((res) => res.status === "rejected");
+
+        if (rateLimited) {
+          setStatus("You hit the rate limit. Showing your last saved data.");
+        } else if (failed) {
+          setStatus(
+            "Some widgets couldn't refresh. Showing your last saved data for now."
+          );
         }
       } catch (err) {
+        const isRateLimited = err?.response?.status === 429;
+        setStatus(
+          isRateLimited
+            ? "You hit the rate limit. Showing your last saved data."
+            : "Unable to refresh data right now. Showing your last saved data."
+        );
         console.error("Dashboard load error:", err);
       }
     };
@@ -143,6 +201,12 @@ export default function Dashboard() {
             </p>
           )}
         </motion.div>
+
+        {status && (
+          <div className="mb-8 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-yellow-200 px-4 py-3 text-center">
+            {status}
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Focus Insights */}
