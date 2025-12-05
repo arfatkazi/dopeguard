@@ -3,7 +3,9 @@ let nsfwjs = null;
 
 console.log("DopeGuard: Waiting for TF…");
 
-function waitForTF() {
+function waitForTF(timeoutMs = 8000) {
+  const start = Date.now();
+
   return new Promise((resolve) => {
     const check = () => {
       if (window.tf && window.nsfwjs && typeof window.tf.ready === "function") {
@@ -11,10 +13,19 @@ function waitForTF() {
         nsfwjs = window.nsfwjs;
         console.log("DopeGuard: TensorFlow + NSFWJS ready");
         resolve(true);
-      } else {
-        setTimeout(check, 50);
+
+        return;
       }
+
+      if (Date.now() - start > timeoutMs) {
+        console.warn("DopeGuard: TensorFlow stack not available (timeout)");
+        resolve(false);
+        return;
+      }
+
+      setTimeout(check, 50);
     };
+
     check();
   });
 }
@@ -63,6 +74,60 @@ function safeURL(path) {
 
 const ADULT_KEYWORDS = window.ADULT_KEYWORDS || [];
 
+const TF_SCRIPTS = [
+  "libs/tf-core.min.js",
+  "libs/tf-converter.min.js",
+  "libs/tf-backend-cpu.min.js",
+  "libs/nsfwjs.min.js",
+];
+
+const CAN_EVAL = (() => {
+  try {
+    // CSP that blocks eval will throw here
+    new Function("return true")();
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+let tfStackPromise = null;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = safeURL(src);
+    script.onload = () => resolve(true);
+    script.onerror = (err) => reject(err);
+    (document.head || document.documentElement).appendChild(script);
+  });
+}
+
+async function ensureTFStack() {
+  if (tfStackPromise) return tfStackPromise;
+
+  tfStackPromise = (async () => {
+    if (!CAN_EVAL) {
+      console.warn(
+        "DopeGuard: Page CSP blocks eval — running keyword-only protection."
+      );
+      return false;
+    }
+
+    try {
+      for (const script of TF_SCRIPTS) {
+        await loadScript(script);
+      }
+
+      return waitForTF();
+    } catch (err) {
+      console.warn("DopeGuard: Failed to load TensorFlow stack", err);
+      return false;
+    }
+  })();
+
+  return tfStackPromise;
+}
 /* =============================================================
    CONFIG
    ============================================================= */
@@ -1074,7 +1139,13 @@ async function scanLoop() {
    ============================================================= */
 (async function init() {
   try {
-    await waitForTF();
+    const tfReady = await ensureTFStack();
+    if (!tfReady) {
+      console.warn(
+        "DopeGuard: TensorFlow blocked by CSP — using keyword-only detection."
+      );
+    }
+
     const res = await chrome.runtime.sendMessage({ action: "verifyToken" });
 
     if (!res.success || !res.active) {
