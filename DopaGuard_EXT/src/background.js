@@ -38,7 +38,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         sendResponse(json);
       } catch (err) {
-        sendResponse({ success: false, active: false });
+        sendResponse({
+          success: false,
+          active: true,
+          reason: "network_error",
+        });
       }
     });
 

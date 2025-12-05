@@ -65,6 +65,12 @@ screenshots/
 *.png
 *.jpg
 
+# Keep bundled assets under version control
+!src/dopeguard.jpg
+!src/blocked.jpg
+!src/icons/*.jpg
+
+
 # ==========================================================
 # End of file
 # ==========================================================

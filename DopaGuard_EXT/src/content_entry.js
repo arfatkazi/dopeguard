@@ -12,6 +12,18 @@ function waitForTF(timeoutMs = 8000) {
         tf = window.tf;
         nsfwjs = window.nsfwjs;
         console.log("DopeGuard: TensorFlow + NSFWJS ready");
+        try {
+          if (tf && typeof tf.env === "function") {
+            const env = tf.env();
+            if (env?.set) {
+              // Required for CSP-safe WASM backend when available
+              env.set("IS_BROWSER", true);
+              env.set("IS_NODE", false);
+            }
+          }
+        } catch (e) {
+          console.warn("TF env not ready", e);
+        }
         resolve(true);
 
         return;
@@ -34,14 +46,6 @@ try {
   if (tf?.disableDeprecationWarnings) tf.disableDeprecationWarnings();
 } catch (e) {
   console.log(e);
-}
-
-// Required for CSP-safe WASM backend:
-try {
-  tf.env().set("IS_BROWSER", true);
-  tf.env().set("IS_NODE", false);
-} catch (e) {
-  console.warn("TF env not ready", e);
 }
 
 // No WASM flags — removed
@@ -1148,10 +1152,16 @@ async function scanLoop() {
 
     const res = await chrome.runtime.sendMessage({ action: "verifyToken" });
 
-    if (!res.success || !res.active) {
+    if (res?.success && res.active === false) {
       console.warn("❌ Subscription inactive — disabling DopeGuard");
       disableShield();
       return;
+    }
+
+    if (!res?.success) {
+      console.warn(
+        "DopeGuard: could not verify subscription (network/timeout) — continuing in keyword mode"
+      );
     }
 
     window.__DOPEGUARD_ACTIVE = true;
