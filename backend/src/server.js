@@ -86,19 +86,23 @@ app.use(morgan("dev"));
 // =============================================================
 // 🧠 Arcjet — Abuse + Bot Protection
 // =============================================================
+
+const isProd = process.env.NODE_ENV === "production";
 const aj = arcjet({
   key: process.env.ARCJET_KEY,
   rules: [
     shield({ mode: "LIVE" }), // Prevents XSS, SQLi, etc.
     detectBot({
-      mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
+      mode: isProd ? "LIVE" : "DRY_RUN",
       allow: ["CATEGORY:SEARCH_ENGINE", "LOCALHOST"],
     }),
     tokenBucket({
-      mode: "LIVE",
-      refillRate: 5,
-      interval: 10,
-      capacity: 10,
+      mode: isProd ? "LIVE" : "DRY_RUN",
+      // Allow higher throughput for authenticated dashboard traffic while
+      // still keeping protection enabled in production.
+      refillRate: 120, // tokens added per interval
+      interval: 60, // seconds
+      capacity: 240, // maximum burst tokens
     }),
   ],
 });
