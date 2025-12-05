@@ -1100,14 +1100,14 @@ async function scanLoop() {
     if (!window.__DOPEGUARD_ACTIVE) return;
     if (document.hidden) return;
 
+    const host = location.hostname.toLowerCase();
+    for (const d of SAFE_DOMAINS)
+      if (host === d || host.endsWith("." + d)) return;
+
     if (pageContainsNSFWText()) {
       enforceShield();
       return;
     }
-
-    const host = location.hostname.toLowerCase();
-    for (const d of SAFE_DOMAINS)
-      if (host === d || host.endsWith("." + d)) return;
 
     /* 🔥 NEW — BLOCK IFRAME PORN IMMEDIATELY */
     document.querySelectorAll("iframe").forEach((frame) => {
