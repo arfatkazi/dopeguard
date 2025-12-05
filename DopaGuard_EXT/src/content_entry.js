@@ -64,6 +64,12 @@ function disableShield() {
   console.warn("❌ DopeGuard is OFF — subscription inactive.");
 }
 
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.action === "dg_logout") {
+    disableShield();
+  }
+});
+
 // DO NOT block extension at global top-level (BUG FIXED)
 // Now subscription check happens inside init()
 
@@ -140,7 +146,7 @@ const SCAN_INTERVAL_MS = 700;
 const MIN_IMAGE_SIZE = 80;
 const SRC_CACHE = new Map();
 let nsfwModel = null;
-window.__DOPEGUARD_ACTIVE = true;
+window.__DOPEGUARD_ACTIVE = false;
 
 // Model file (must exist inside extension/model/)
 const MODEL_PATH = safeURL("model/model.json");
@@ -905,6 +911,7 @@ function shouldActivate() {
    SHIELD BLOCKING
    ============================================================= */
 function createShield() {
+  if (!window.__DOPEGUARD_ACTIVE) return null;
   const shield = document.createElement("div");
   shield.id = "dopa-blackout";
   shield.style.cssText = `
@@ -927,9 +934,11 @@ function createShield() {
 }
 
 function enforceShield() {
+  if (!window.__DOPEGUARD_ACTIVE) return;
   if (document.getElementById("dopa-blackout")) return;
 
   const shield = createShield();
+  if (!shield) return;
   document.documentElement.appendChild(shield);
 
   requestAnimationFrame(() => (shield.style.opacity = "1"));
@@ -1019,6 +1028,7 @@ async function ensureModel() {
    MAIN SCANNING LOOP
    ============================================================= */
 async function classifyBatch(elements) {
+  if (!window.__DOPEGUARD_ACTIVE) return;
   const model = await ensureModel();
   if (!model) return;
 
@@ -1087,6 +1097,7 @@ function pageContainsNSFWText() {
 
 async function scanLoop() {
   try {
+    if (!window.__DOPEGUARD_ACTIVE) return;
     if (document.hidden) return;
 
     if (pageContainsNSFWText()) {
@@ -1152,8 +1163,10 @@ async function scanLoop() {
 
     const res = await chrome.runtime.sendMessage({ action: "verifyToken" });
 
-    if (res?.success && res.active === false) {
-      console.warn("❌ Subscription inactive — disabling DopeGuard");
+    if (res?.active === false) {
+      console.warn(
+        "❌ Subscription inactive or user logged out — disabling DopeGuard"
+      );
       disableShield();
       return;
     }

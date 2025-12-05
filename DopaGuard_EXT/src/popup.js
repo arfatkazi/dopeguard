@@ -149,6 +149,22 @@ function setupLogout() {
   btn.addEventListener("click", async () => {
     await clearToken();
 
+    try {
+      chrome.tabs?.query({}, (tabs) => {
+        tabs?.forEach((tab) => {
+          if (!tab?.id) return;
+
+          try {
+            chrome.tabs.sendMessage(tab.id, { action: "dg_logout" });
+          } catch (err) {
+            console.warn("DopeGuard: failed to notify tab about logout", err);
+          }
+        });
+      });
+    } catch (err) {
+      console.warn("DopeGuard: unable to broadcast logout", err);
+    }
+
     hideBanner();
     text(el.status(), "Not logged in");
 
