@@ -371,6 +371,7 @@ const SAFE_DOMAINS = new Set([
   "uber.com",
   "olaelectric.com",
   "olacabs.com",
+  "https://chatgpt.com/",
 
   // Utilities
   "weather.com",
