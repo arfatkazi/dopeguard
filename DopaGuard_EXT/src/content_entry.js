@@ -1,19 +1,37 @@
-// ===============================================================
-// DopeGuard — Extreme Defense Mode (v3.0, FIXED PRODUCTION BUILD)
-// ===============================================================
+let tf = null;
+let nsfwjs = null;
 
-// ----------------------------
-// DISABLE SHIELD (INACTIVE PLAN)
-// ----------------------------
+console.log("DopeGuard: Waiting for TF…");
 
-import * as tf from "@tensorflow/tfjs";
-import * as nsfwjs from "nsfwjs";
+function waitForTF() {
+  return new Promise((resolve) => {
+    const check = () => {
+      if (window.tf && window.nsfwjs && typeof window.tf.ready === "function") {
+        tf = window.tf;
+        nsfwjs = window.nsfwjs;
+        console.log("DopeGuard: TensorFlow + NSFWJS ready");
+        resolve(true);
+      } else {
+        setTimeout(check, 50);
+      }
+    };
+    check();
+  });
+}
 
-tf.disableDeprecationWarnings();
+try {
+  if (tf?.disableDeprecationWarnings) tf.disableDeprecationWarnings();
+} catch (e) {
+  console.log(e);
+}
 
 // Required for CSP-safe WASM backend:
-tf.env().set("IS_BROWSER", true);
-tf.env().set("IS_NODE", false);
+try {
+  tf.env().set("IS_BROWSER", true);
+  tf.env().set("IS_NODE", false);
+} catch (e) {
+  console.warn("TF env not ready", e);
+}
 
 // No WASM flags — removed
 
@@ -43,7 +61,7 @@ function safeURL(path) {
   }
 }
 
-import { ADULT_KEYWORDS } from "./adult_keywords.js";
+const ADULT_KEYWORDS = window.ADULT_KEYWORDS || [];
 
 /* =============================================================
    CONFIG
@@ -62,171 +80,7 @@ const MODEL_PATH = safeURL("model/model.json");
    SAFE_DOMAINS PLACEHOLDER (YOU WILL PASTE IT HERE)
    ============================================================= */
 const SAFE_DOMAINS = new Set([
-  /* ← PASTE YOUR SAFE_DOMAINS ARRAY HERE */
-
-  "gmail.com",
-  "outlook.com",
-  "office.com",
-  "microsoft365.com",
-  "notion.so",
-  "slack.com",
-  "zoom.us",
-  "meet.google.com",
-  "drive.google.com",
-  "docs.google.com",
-  "sheets.google.com",
-  "forms.google.com",
-  "calendar.google.com",
-  "dropbox.com",
-  "asana.com",
-  "trello.com",
-  "clickup.com",
-  "calendly.com",
-  "todoist.com",
-  "airtable.com",
-  "wikipedia.org",
-  "stackoverflow.com",
-  "geeksforgeeks.org",
-  "tutorialspoint.com",
-  "w3schools.com",
-  "javatpoint.com",
-  "khanacademy.org",
-  "byjus.com",
-  "coursera.org",
-  "udemy.com",
-  "edx.org",
-  "skillshare.com",
-  "brilliant.org",
-  "kaggle.com",
-  "codecademy.com",
-  "freecodecamp.org",
-  "developer.mozilla.org",
-  "mdn.dev",
-  "medium.com",
-  "quora.com",
-  "razorpay.com",
-  "stripe.com",
-  "paypal.com",
-  "paytm.com",
-  "phonepe.com",
-  "cashfree.com",
-  "ccavenue.com",
-  "payu.in",
-  "googlepay.com",
-  "amazonpay.in",
-  "icicibank.com",
-  "hdfcbank.com",
-  "axisbank.com",
-  "sbi.co.in",
-  "kotak.com",
-  "yesbank.in",
-  "federalbank.co.in",
-  "indusind.com",
-  "bankofbaroda.in",
-  "canarabank.com",
-  "idfcfirstbank.com",
-  "chat.openai.com",
-  "openai.com",
-  "gemini.google.com",
-  "claude.ai",
-  "perplexity.ai",
-  "copilot.microsoft.com",
-  "huggingface.co",
-  "anthropic.com",
-  "replit.com",
-  "cursor.sh",
-  "github.com",
-  "gitlab.com",
-  "bitbucket.org",
-  "npmjs.com",
-  "vercel.com",
-  "railway.app",
-  "netlify.app",
-  "cloudflare.com",
-  "digitalocean.com",
-  "render.com",
-  "supabase.com",
-  "firebase.google.com",
-  "mongodb.com",
-  "atlas.mongodb.com",
-  "postman.com",
-  "swagger.io",
-  "figma.com",
-  "canva.com",
-  "youtube.com",
-  "music.youtube.com",
-  "spotify.com",
-  "netflix.com",
-  "hotstar.com",
-  "primevideo.com",
-  "sonyliv.com",
-  "zee5.com",
-  "jiosaavn.com",
-  "gaana.com",
-  "wynk.in",
-  "amazon.in",
-  "amazon.com",
-  "flipkart.com",
-  "myntra.com",
-  "ajio.com",
-  "meesho.com",
-  "nykaa.com",
-  "bigbasket.com",
-  "swiggy.com",
-  "zomato.com",
-  "blinkit.com",
-  "dunzo.com",
-  "tatacliq.com",
-  "snapdeal.com",
-  "croma.com",
-  "bbc.com",
-  "cnn.com",
-  "reuters.com",
-  "bloomberg.com",
-  "ndtv.com",
-  "indiatimes.com",
-  "timesofindia.com",
-  "economictimes.indiatimes.com",
-  "moneycontrol.com",
-  "business-standard.com",
-  "forbes.com",
-  "investopedia.com",
-  "marketwatch.com",
-  "uidai.gov.in",
-  "incometax.gov.in",
-  "passportindia.gov.in",
-  "digilocker.gov.in",
-  "parivahan.gov.in",
-  "rbi.org.in",
-  "sebi.gov.in",
-  "mygov.in",
-  "india.gov.in",
-  "practo.com",
-  "1mg.com",
-  "pharmeasy.in",
-  "healthline.com",
-  "webmd.com",
-  "mayoclinic.org",
-  "who.int",
-  "cdc.gov",
-  "irctc.co.in",
-  "makemytrip.com",
-  "goibibo.com",
-  "yatra.com",
-  "cleartrip.com",
-  "booking.com",
-  "tripadvisor.com",
-  "airindia.com",
-  "indigo.in",
-  "goindigo.in",
-  "googlemaps.com",
-  "maps.google.com",
-  "uber.com",
-  "olaelectric.com",
-  "olacabs.com",
-  "weather.com",
-  "speedtest.net",
-  "archive.org",
+  // Productivity
   "gmail.com",
   "outlook.com",
   "office.com",
@@ -248,7 +102,7 @@ const SAFE_DOMAINS = new Set([
   "todoist.com",
   "airtable.com",
 
-  // 📚 Education / Knowledge
+  // Education
   "wikipedia.org",
   "stackoverflow.com",
   "geeksforgeeks.org",
@@ -270,7 +124,7 @@ const SAFE_DOMAINS = new Set([
   "medium.com",
   "quora.com",
 
-  // 💳 Payments / Banking
+  // Payments / Banking
   "razorpay.com",
   "stripe.com",
   "paypal.com",
@@ -293,7 +147,7 @@ const SAFE_DOMAINS = new Set([
   "canarabank.com",
   "idfcfirstbank.com",
 
-  // 🤖 AI / Tools
+  // AI Tools
   "chat.openai.com",
   "openai.com",
   "gemini.google.com",
@@ -304,9 +158,8 @@ const SAFE_DOMAINS = new Set([
   "anthropic.com",
   "replit.com",
   "cursor.sh",
-  "aicodebuddy.com",
 
-  // 🧠 Developer / Tech
+  // Developer Tools
   "github.com",
   "gitlab.com",
   "bitbucket.org",
@@ -326,7 +179,7 @@ const SAFE_DOMAINS = new Set([
   "figma.com",
   "canva.com",
 
-  // 🎬 Safe Media / Entertainment (Non-adult)
+  // Safe Entertainment
   "youtube.com",
   "music.youtube.com",
   "spotify.com",
@@ -339,7 +192,7 @@ const SAFE_DOMAINS = new Set([
   "gaana.com",
   "wynk.in",
 
-  // 🛒 Shopping / E-commerce
+  // E-commerce
   "amazon.in",
   "amazon.com",
   "flipkart.com",
@@ -356,7 +209,7 @@ const SAFE_DOMAINS = new Set([
   "snapdeal.com",
   "croma.com",
 
-  // 🗞️ News / Finance / Business
+  // News & Finance
   "bbc.com",
   "cnn.com",
   "reuters.com",
@@ -371,7 +224,7 @@ const SAFE_DOMAINS = new Set([
   "investopedia.com",
   "marketwatch.com",
 
-  // 🧾 Government / Utilities (India)
+  // Government Services
   "uidai.gov.in",
   "incometax.gov.in",
   "passportindia.gov.in",
@@ -382,7 +235,7 @@ const SAFE_DOMAINS = new Set([
   "mygov.in",
   "india.gov.in",
 
-  // 🏥 Health & Wellness
+  // Health
   "practo.com",
   "1mg.com",
   "pharmeasy.in",
@@ -392,7 +245,7 @@ const SAFE_DOMAINS = new Set([
   "who.int",
   "cdc.gov",
 
-  // 🌍 Travel / Maps / Transport
+  // Travel / Transport
   "irctc.co.in",
   "makemytrip.com",
   "goibibo.com",
@@ -403,13 +256,11 @@ const SAFE_DOMAINS = new Set([
   "airindia.com",
   "indigo.in",
   "goindigo.in",
-  "googlemaps.com",
-  "maps.google.com",
   "uber.com",
   "olaelectric.com",
   "olacabs.com",
 
-  // 💡 Misc Safe Utilities
+  // Utilities
   "weather.com",
   "speedtest.net",
   "archive.org",
@@ -762,11 +613,43 @@ const RISKY_WORDS = [
 
   //social media often used for adult content sharing
   "https://x.com/",
+  "x.com",
+  "twitter",
+  "twitter.com",
+  "www.twitter.com",
   "https://www.snapchat.com/",
+  "snapchat",
+  "snapchat.com",
+  "www.snapchat.com",
   "https://www.instagram.com/",
+  "instagram",
+  "instagram.com",
+  "www.instagram.com",
+  "insta",
+  "instagr.am",
   "https://www.facebook.com/",
   "https://www.reddit.com/",
+  "tiktok",
+  "tiktok.com",
+  "www.tiktok.com",
+  "vm.tiktok.com", // shortlinks
+  "t.co", // twitter shortlinks (optional)
+  "m.tiktok.com",
+  "vm.tiktok.com",
   // (add any other specific tokens you absolutely must include)
+  "girl kissing",
+  "girl kiss girl",
+  "boy kissing",
+  "boy kiss boy",
+  "lesbain",
+  "gay sex",
+  "lesbian sex",
+  "lesbian kiss",
+  "lesbian kiss girl",
+  "lesbian kiss boy",
+  "lesbian kiss lesbian",
+  "lesbian kiss lesbian",
+  "lesbian kiss lesbian",
 ];
 
 // compile regex
@@ -774,15 +657,24 @@ const RISKY_REGEX = new RegExp(
   RISKY_WORDS.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
   "i"
 );
-
 /* =============================================================
    UTILITIES
    ============================================================= */
 function getImageSrc(el) {
   try {
-    const styleBg = getComputedStyle(el).backgroundImage || "";
-    const bg = styleBg.replace(/url\(["']?(.+?)["']?\)/, "$1") || "";
-    return (el.currentSrc || el.src || el.srcset || bg || "").toString();
+    const bg = getComputedStyle(el).backgroundImage || "";
+    const bgUrl = bg.replace(/.*url\(["']?(.+?)["']?\).*/, "$1");
+
+    return (
+      el.currentSrc ||
+      el.src ||
+      el.getAttribute("src") ||
+      el.getAttribute("data-src") ||
+      el.getAttribute("data-uri") ||
+      el.getAttribute("data-img") ||
+      bgUrl ||
+      ""
+    ).toString();
   } catch {
     return "";
   }
@@ -828,6 +720,10 @@ function replaceWithBlocked(el) {
 
     try {
       chrome.runtime.sendMessage({ action: "incrementBlock" });
+      chrome.runtime.sendMessage({
+        action: "blockedSite",
+        site: location.hostname,
+      });
     } catch {}
   } catch {}
 }
@@ -876,7 +772,20 @@ function scanByKeywords() {
     const imgs = document.querySelectorAll("img, [style*='background-image']");
     imgs.forEach((el) => {
       if (isSafeElement(el)) return;
-      const src = (getImageSrc(el) || "").toLowerCase();
+
+      let src =
+        el.currentSrc ||
+        el.src ||
+        el.getAttribute("srcset") ||
+        el.getAttribute("data-thumb") ||
+        el.getAttribute("data-preview") ||
+        el.getAttribute("data-src") ||
+        el.getAttribute("data-original") ||
+        getImageSrc(el) ||
+        "";
+
+      src = src.toLowerCase();
+
       if (!src) return;
 
       if (ADULT_KEYWORDS.some((kw) => src.includes(kw))) {
@@ -886,39 +795,41 @@ function scanByKeywords() {
   } catch {}
 }
 
+function isPornDomain() {
+  const h = location.hostname.replace("www.", "").toLowerCase();
+  return RISKY_REGEX.test(h) || RISKY_REGEX.test(location.href.toLowerCase());
+}
+
 /* =============================================================
    DOMAIN DETECTION
    ============================================================= */
 function shouldActivate() {
   try {
     const url = location.href.toLowerCase();
-    const title = document.title.toLowerCase();
+    const host = location.hostname.replace("www.", "").toLowerCase();
 
-    // SAFE domains skip scanning entirely
+    // Skip whitelisted domains
     for (const d of SAFE_DOMAINS) {
-      if (url.includes(d)) return false;
+      if (host === d || host.endsWith("." + d)) return false;
     }
 
-    // RISKY domain detection
-    if (RISKY_REGEX.test(url)) return true;
+    // 🚀 New: Very strong porn detection
+    if (isPornDomain()) return true;
 
-    // Search engines
-    try {
-      const q = new URLSearchParams(window.location.search).get("q") || "";
-      if (q.match(/sex|porn|fuck|xxx|nude|hentai|adult/i)) return true;
-    } catch {}
+    // Query parameters (Google search)
+    const q = new URLSearchParams(location.search).get("q") || "";
+    if (q && RISKY_REGEX.test(q)) return true;
 
-    // fuzzy keyword detection
-    for (const kw of ADULT_KEYWORDS) {
-      const fuzzy = kw.replace(/(.)\1+/g, "$1");
-      if (url.includes(fuzzy) || title.includes(fuzzy)) {
-        if (/porn|sex|xxx|nsfw|hentai|adult|fuck|nude/.test(url + title))
-          return true;
-      }
-    }
-  } catch {}
+    // Page title
+    if (RISKY_REGEX.test(document.title.toLowerCase())) return true;
 
-  return false;
+    // Page contains explicit text
+    if (pageContainsNSFWText()) return true;
+
+    return false;
+  } catch (e) {
+    return false;
+  }
 }
 
 /* =============================================================
@@ -992,22 +903,45 @@ function enforceShield() {
 }
 
 /* =============================================================
-   AI MODEL LOADING
+   AI MODEL LOADING — safer (NO wasm forced)
+   ============================================================= */
+/* =============================================================
+   AI MODEL LOADING — safer (NO wasm forced)
    ============================================================= */
 async function ensureModel() {
+  // If model already loaded globally, reuse it
   if (window.__DGModel) return window.__DGModel;
-  if (nsfwModel) return nsfwModel;
 
   try {
-    await tf.setBackend("wasm");
-    await tf.ready();
+    // Make sure TF is present
+    if (typeof window.tf === "undefined") {
+      console.error("DopeGuard: tf (TensorFlow) not found on page.");
+      return null;
+    }
 
-    nsfwModel = await nsfwjs.load(MODEL_PATH, { size: 224 });
+    // Use CPU backend (safer & CSP-friendly); webgl can be used if available
+    // Note: tf-backend-cpu script must be loaded before this runs (we set run_at document_end)
+    try {
+      await tf.setBackend("cpu");
+    } catch (e) {
+      console.warn("tf.setBackend('cpu') failed — continuing:", e);
+    }
+
+    // Wait until tf is ready
+    if (tf.ready) await tf.ready();
+
+    // Load nsfwjs model (nsfwjs should be loaded as window.nsfwjs)
+    if (typeof window.nsfwjs === "undefined") {
+      console.error("DopeGuard: nsfwjs not found on page.");
+      return null;
+    }
+
+    nsfwModel = await nsfwjs.load(safeURL("model/model.json"), { size: 224 });
     window.__DGModel = nsfwModel;
-
+    console.log("DopeGuard: model loaded");
     return nsfwModel;
-  } catch (err) {
-    console.warn("⚠ NSFW model failed to load:", err);
+  } catch (e) {
+    console.error("DopeGuard: Model load failed:", e);
     return null;
   }
 }
@@ -1053,12 +987,58 @@ async function classifyBatch(elements) {
   );
 }
 
+// TEXT NSFW DETECTOR
+// =======================
+function pageContainsNSFWText() {
+  try {
+    // 1) URL check (strong)
+    const url = location.href.toLowerCase();
+    if (RISKY_REGEX.test(url)) return true;
+
+    // 2) Query parameter check
+    const q = new URLSearchParams(location.search).get("q") || "";
+    if (q && RISKY_REGEX.test(q.toLowerCase())) return true;
+
+    // 3) Search-box value (Google, X, Instagram, TikTok)
+    const inputs = document.querySelectorAll("input, textarea");
+    for (const i of inputs) {
+      const v = (i.value || "").toLowerCase();
+      if (v && RISKY_REGEX.test(v)) return true;
+    }
+
+    // 4) Body text (limit size)
+    const text = (document.body?.innerText || "").toLowerCase();
+    if (text.length < 250000 && RISKY_REGEX.test(text)) return true;
+
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function scanLoop() {
   try {
     if (document.hidden) return;
 
+    if (pageContainsNSFWText()) {
+      enforceShield();
+      return;
+    }
+
     const host = location.hostname.toLowerCase();
-    for (const d of SAFE_DOMAINS) if (host.includes(d)) return;
+    for (const d of SAFE_DOMAINS)
+      if (host === d || host.endsWith("." + d)) return;
+
+    /* 🔥 NEW — BLOCK IFRAME PORN IMMEDIATELY */
+    document.querySelectorAll("iframe").forEach((frame) => {
+      try {
+        const src = (frame.src || "").toLowerCase();
+        if (src && RISKY_REGEX.test(src)) {
+          console.log("DopeGuard: Porn iframe detected → blocking", src);
+          enforceShield();
+        }
+      } catch {}
+    });
 
     detectBase64Images();
     detectCanvasDrawings();
@@ -1066,7 +1046,7 @@ async function scanLoop() {
     scanByKeywords();
 
     const imgs = Array.from(
-      document.querySelectorAll("img,[style*='background-image']")
+      document.querySelectorAll("img, [style*='background-image']")
     );
 
     if (imgs.length > 300) return;
@@ -1094,6 +1074,7 @@ async function scanLoop() {
    ============================================================= */
 (async function init() {
   try {
+    await waitForTF();
     const res = await chrome.runtime.sendMessage({ action: "verifyToken" });
 
     if (!res.success || !res.active) {
@@ -1137,7 +1118,13 @@ async function scanLoop() {
     console.log("🛡️ DopeGuard Extreme Mode Active");
   } catch (err) {
     try {
-      if (shouldActivate()) enforceShield();
-    } catch {}
+      if (shouldActivate() || pageContainsNSFWText()) {
+        enforceShield();
+      } else {
+        scanLoop();
+      }
+    } catch {
+      console.warn("❌ DopeGuard init failed:", err);
+    }
   }
 })();

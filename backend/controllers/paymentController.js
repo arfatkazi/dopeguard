@@ -80,6 +80,9 @@ export const verifyPayment = async (req, res) => {
       user.planExpiry = expiry;
 
       await user.save();
+      return res
+        .status(200)
+        .json({ success: true, message: "Payment verified", user });
     }
 
     res

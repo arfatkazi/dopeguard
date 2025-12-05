@@ -2,28 +2,20 @@
   "manifest_version": 3,
   "name": "DopeGuard 🧠 AI Shield",
   "version": "1.0.0",
-  "description": "Blocks NSFW sites, base64 images, and videos using AI.",
+
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
+
   "host_permissions": ["http://127.0.0.1:5000/*", "http://localhost:5000/*"],
 
   "background": {
     "service_worker": "background.js"
   },
 
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["libs/tf.min.js", "content_entry.js"],
-      "run_at": "document_start",
+      "js": ["libs/nsfwjs.min.js", "adult_keywords.js", "content_entry.js"],
+      "run_at": "document_end",
       "world": "ISOLATED"
     }
   ],
@@ -31,25 +23,18 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "libs/tf.min.js",
-        "libs/nsfwjs.min.js",
+        "libs/*",
+        "model/*",
+        "*.wasm",
         "dopeguard.jpg",
         "blocked.jpg",
-        "icons/*",
-        "model/*",
-        "*.wasm"
+        "icons/*"
       ],
       "matches": ["<all_urls>"]
     }
   ],
 
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  "action": {
+    "default_popup": "popup.html"
   }
 }

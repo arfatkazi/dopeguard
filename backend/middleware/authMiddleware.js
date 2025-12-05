@@ -5,11 +5,13 @@ export const authMiddleware = async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store");
 
+    // Accept both:
+    // 1) Web session → req.cookies.token
+    // 2) Chrome extension → Authorization: Bearer TOKEN
     const tokenFromCookie = req.cookies?.token;
-    const authHeader = req.headers?.authorization;
-    const tokenFromHeader = authHeader?.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : null;
+    const header = req.headers?.authorization;
+    const tokenFromHeader =
+      header && header.startsWith("Bearer ") ? header.split(" ")[1] : null;
 
     const token = tokenFromCookie || tokenFromHeader;
 
@@ -20,6 +22,7 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // Decode JWT
     const decoded = verifyJwt(token);
     if (!decoded || !decoded.id) {
       return res.status(401).json({
@@ -28,6 +31,7 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // Fetch user
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
       return res.status(401).json({
@@ -36,8 +40,11 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // Attach to request
     req.user = user;
-    next();
+    req.userId = user._id;
+
+    return next();
   } catch (err) {
     console.error("Auth Middleware Error:", err);
     return res.status(401).json({

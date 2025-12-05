@@ -5,16 +5,12 @@
   "description": "DopeGuard AI Shield Chrome/Brave Extension — Blocks NSFW sites and images.",
   "scripts": {
     "clean": "rimraf extension",
-    "build:bundle": "esbuild src/background.js src/content_entry.js src/utils/auth.js src/utils/api.js --bundle --format=esm --outdir=extension --sourcemap",
-    "copy:popup": "cpx src/popup.js extension",
+    "build:bundle": "esbuild src/background.js src/utils/auth.js src/utils/api.js --bundle --format=esm --outdir=extension --sourcemap",
+    "copy:popup": "cpx src/popup.js extension && cpx src/content_entry.js extension",
     "copy:static": "cpx manifest.json extension && cpx src/popup.html extension && cpx src/blocked.jpg extension && cpx src/dopeguard.jpg extension && cpx src/adult_keywords.js extension && cpx \"src/icons/*\" extension/icons && cpx \"src/model/**/*\" extension/model && cpx \"src/libs/*\" extension/libs",
-    "copy:tf": "cpx \"node_modules/@tensorflow/tfjs-backend-wasm/dist/*.wasm\" extension",
-    "build": "npm run clean && npm run build:bundle && npm run copy:popup && npm run copy:static && npm run copy:tf"
+    "build": "npm run clean && npm run build:bundle && npm run copy:popup && npm run copy:static"
   },
-  "dependencies": {
-    "@tensorflow/tfjs": "^4.22.0",
-    "nsfwjs": "^4.2.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "cpx": "^1.5.0",
     "esbuild": "^0.27.0",

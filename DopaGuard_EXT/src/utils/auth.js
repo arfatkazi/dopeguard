@@ -1,17 +1,17 @@
-// src/utils/auth.js
+// src/extension/utils/auth.js
 
 const API = "http://127.0.0.1:5000"; // backend API
 
-// ------------------------------
-//  DEVICE ID GENERATION
-// ------------------------------
-async function getOrCreateDeviceId() {
+/* ============================================================
+   DEVICE ID (PERSIST FOREVER)
+   ============================================================ */
+export function getOrCreateDeviceId() {
   return new Promise((resolve) => {
     chrome.storage.local.get(["dg_device_id"], (res) => {
       let id = res?.dg_device_id;
 
       if (!id) {
-        id = "dg-" + Math.random().toString(36).slice(2) + Date.now();
+        id = "dg-" + Math.random().toString(36).slice(2) + "-" + Date.now();
         chrome.storage.local.set({ dg_device_id: id });
       }
 
@@ -20,9 +20,9 @@ async function getOrCreateDeviceId() {
   });
 }
 
-// ------------------------------
-// TOKEN STORAGE HELPERS
-// ------------------------------
+/* ============================================================
+   TOKEN STORAGE HELPERS
+   ============================================================ */
 export function setToken(token) {
   return new Promise((resolve) => {
     try {
@@ -55,12 +55,11 @@ export function clearToken() {
   });
 }
 
-// ------------------------------
-//  EXTENSION LOGIN (FIXED)
-// ------------------------------
+/* ============================================================
+   EXTENSION LOGIN (EMAIL + PASSWORD)
+   ============================================================ */
 export async function extensionLogin(email, password) {
   try {
-    // Collect device info (WHAT BACKEND NEEDS)
     const deviceId = await getOrCreateDeviceId();
     const deviceInfo = {
       deviceId,
@@ -76,39 +75,65 @@ export async function extensionLogin(email, password) {
 
     const data = await res.json().catch(() => ({}));
 
+    // Login success
     if (res.ok && data.token) {
       await setToken(data.token);
-      return { success: true, data };
+      return {
+        success: true,
+        token: data.token,
+        user: data.user,
+      };
     }
 
-    return { success: false, data };
+    // Login failed
+    return {
+      success: false,
+      message: data.message || "Invalid credentials",
+      status: res.status,
+    };
   } catch (err) {
-    return { success: false, error: err.message || "Network error" };
+    return {
+      success: false,
+      message: "Network error",
+      error: err.message,
+    };
   }
 }
 
-// ------------------------------
-//  VERIFY TOKEN
-// ------------------------------
+/* ============================================================
+   VERIFY TOKEN WITH BACKEND
+   ============================================================ */
 export async function verifyExtensionToken() {
   try {
     const token = await getToken();
-    if (!token) return { success: false, message: "No token" };
+    if (!token) return { success: false, active: false };
 
     const res = await fetch(`${API}/api/extension/verify`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
 
     const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) await clearToken();
-      return { success: false, data, status: res.status };
+    // Invalid or expired token
+    if (res.status === 401 || res.status === 403) {
+      await clearToken();
+      return { success: false, active: false };
     }
 
-    return { success: true, ...data };
+    // Success response → return as-is
+    return {
+      success: true,
+      active: data.active,
+      user: data.user,
+      message: data.message,
+    };
   } catch (err) {
-    return { success: false, error: err.message || "Network error" };
+    return {
+      success: false,
+      active: false,
+      message: "Network error",
+    };
   }
 }

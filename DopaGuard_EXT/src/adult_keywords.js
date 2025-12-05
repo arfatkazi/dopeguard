@@ -1,4 +1,4 @@
-export const ADULT_KEYWORDS = [
+window.ADULT_KEYWORDS = [
   // 🔞 Popular Porn Sites
   "pornhub",
   "pornhubpremium",

@@ -4,25 +4,20 @@ import {
   extensionVerify,
 } from "../controllers/extensionController.js";
 
-import { authMiddleware } from "../middleware/authMiddleware.js";
-
 const router = express.Router();
 
 /**
- * PUBLIC ROUTE
- * Extension login happens with email + password
- * Returns JWT token → saved by chrome extension
+ * PUBLIC — Extension Login
+ * Body: { email, password, deviceInfo }
+ * Response: { success, token, user }
  */
 router.post("/login", extensionLogin);
 
 /**
- * PROTECTED ROUTE
- * Requires:
- * 1) Valid JWT token
- * 2) Active subscription
- *
- * If subscription expired → return active:false
+ * PUBLIC — Extension Verify
+ * Uses JWT directly inside controller.
+ * NO authMiddleware here.
  */
-router.get("/verify", authMiddleware, extensionVerify);
+router.get("/verify", extensionVerify);
 
 export default router;

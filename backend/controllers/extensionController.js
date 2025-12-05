@@ -6,19 +6,18 @@ import User from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-/* ------------------------------ TOKEN MAKER ------------------------------ */
+/* ============================================================
+   INTERNAL: CREATE JWT TOKEN
+   ============================================================ */
 function makeToken(user) {
-  return jwt.sign(
-    {
-      id: user._id,
-      email: user.email,
-    },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  return jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
-/* --------------------------- EXTENSION LOGIN ----------------------------- */
+/* ============================================================
+   EXTENSION LOGIN  (POST /api/extension/login)
+   ============================================================ */
 export const extensionLogin = async (req, res) => {
   try {
     const { email, password, deviceInfo = {} } = req.body;
@@ -31,17 +30,19 @@ export const extensionLogin = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user)
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid credentials",
+      });
 
     const ok = await user.comparePassword(password);
     if (!ok)
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid credentials",
+      });
 
-    // register / update device info
+    // register/update device
     const deviceId = deviceInfo.deviceId || "ext-" + user._id;
     const payload = {
       deviceId,
@@ -64,7 +65,7 @@ export const extensionLogin = async (req, res) => {
       token,
       user: {
         email: user.email,
-        plan: user.plan || "Free",
+        plan: user.plan,
         planExpiry: user.planExpiry,
         subscriptionStatus: user.subscriptionStatus,
       },
@@ -78,15 +79,18 @@ export const extensionLogin = async (req, res) => {
   }
 };
 
-/* --------------------------- EXTENSION VERIFY  ----------------------------- */
-
+/* ============================================================
+   EXTENSION VERIFY (GET /api/extension/verify)
+   DOES NOT USE authMiddleware — parses JWT internally
+   ============================================================ */
 export const extensionVerify = async (req, res) => {
   try {
-    // Disable cache ALWAYS (fixes 304 bug)
     res.setHeader("Cache-Control", "no-store");
 
     const authorization = req.headers.authorization || "";
-    const token = authorization.split(" ")[1];
+    const token = authorization.startsWith("Bearer ")
+      ? authorization.split(" ")[1]
+      : null;
 
     if (!token) {
       return res.status(401).json({
@@ -96,14 +100,15 @@ export const extensionVerify = async (req, res) => {
       });
     }
 
+    // decode token manually
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
-    } catch {
+    } catch (err) {
       return res.status(401).json({
         success: false,
         active: false,
-        message: "Invalid token",
+        message: "Invalid or expired token",
       });
     }
 
@@ -116,11 +121,16 @@ export const extensionVerify = async (req, res) => {
       });
     }
 
-    // ⭐ AUTO-EXPIRE LOGIC (IMPORTANT FIX)
+    /* -----------------------------------------------------------
+       AUTO-EXPIRE LOGIC
+       ----------------------------------------------------------- */
+    const now = new Date();
+    const expiry = new Date(user.planExpiry);
+
     if (
       user.planExpiry &&
       user.subscriptionStatus === "active" &&
-      user.planExpiry < new Date()
+      expiry.getTime() < now.getTime()
     ) {
       user.subscriptionStatus = "expired";
       await user.save();
@@ -131,33 +141,41 @@ export const extensionVerify = async (req, res) => {
         user: {
           email: user.email,
           plan: "Expired",
+          subscriptionStatus: "expired",
         },
         message: "Subscription expired",
       });
     }
 
-    // no active subscription
-    if (user.subscriptionStatus !== "active") {
+    /* -----------------------------------------------------------
+       ACTIVE SUBSCRIPTION
+       ----------------------------------------------------------- */
+    if (user.subscriptionStatus === "active") {
       return res.json({
         success: true,
-        active: false,
+        active: true,
         user: {
           email: user.email,
-          plan: user.plan || "Free",
+          plan: user.plan,
+          planExpiry: user.planExpiry,
+          subscriptionStatus: user.subscriptionStatus,
         },
-        message: "Subscription inactive",
       });
     }
 
-    // ACTIVE
+    /* -----------------------------------------------------------
+       INACTIVE / FREE USERS
+       ----------------------------------------------------------- */
     return res.json({
       success: true,
-      active: true,
+      active: false,
       user: {
         email: user.email,
-        plan: user.plan || "Premium",
+        plan: user.plan || "Free",
         planExpiry: user.planExpiry,
+        subscriptionStatus: user.subscriptionStatus,
       },
+      message: "Subscription inactive",
     });
   } catch (err) {
     console.error("EXT VERIFY ERROR:", err);

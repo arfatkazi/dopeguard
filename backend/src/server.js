@@ -16,6 +16,8 @@ import connectDB from "../config/db.js";
 import extensionRoutes from "../routes/extensionRoutes.js";
 import cron from "node-cron";
 import { expireSubscriptions } from "./jobs/expiryJob.js";
+import activityRoutes from "../routes/activityRoutes.js";
+import deviceRoutes from "../routes/deviceRoutes.js";
 
 // ✅ Load environment variables first
 dotenv.config();
@@ -57,7 +59,9 @@ app.use(
       try {
         if (origin.startsWith("chrome-extension://"))
           return callback(null, true);
-      } catch (e) {}
+      } catch (e) {
+        console.log(e);
+      }
 
       // optionally allow all during dev (uncomment if you prefer)
       // if (process.env.NODE_ENV !== 'production') return callback(null, true);
@@ -152,6 +156,8 @@ app.use(limiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/extension", extensionRoutes);
+app.use("/api/activity", activityRoutes);
+app.use("/api/devices", deviceRoutes);
 
 // =============================================================
 // ❤️ Health Check Endpoint

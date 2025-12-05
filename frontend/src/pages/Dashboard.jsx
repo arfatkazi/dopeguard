@@ -4,10 +4,27 @@ import { motion } from "framer-motion";
 import { Shield, BarChart3, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import ActivityCard from "../components/ActivityCard";
+import DevicesList from "../components/DevicesList";
+import WeeklyFocusChart from "../components/WeeklyFocusChart";
+import BlockedSitesList from "../components/BlockedSitesList";
+import {
+  fetchActivities,
+  fetchWeeklyStats,
+  fetchBlockedSites,
+  fetchDevices,
+  fetchDopamineSpikes,
+} from "../services/analyticsService.js";
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [activities, setActivities] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [blockedSites, setBlockedSites] = useState([]);
+  const [dopamine, setDopamine] = useState({ spikes: [], threshold: 3 });
 
   // 🧠 Always fetch latest backend data (fix for Phase 5)
   useEffect(() => {
@@ -31,6 +48,42 @@ export default function Dashboard() {
 
     fetchUser();
   }, []);
+
+  // useEffect to load data (after verifying user)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [aRes, wRes, bRes, dRes, devRes] = await Promise.allSettled([
+          fetchActivities({ limit: 20 }),
+          fetchWeeklyStats(),
+          fetchBlockedSites(8),
+          fetchDopamineSpikes(),
+          fetchDevices(),
+        ]);
+
+        if (aRes.status === "fulfilled" && aRes.value.data.success) {
+          setActivities(aRes.value.data.activities || []);
+        }
+        if (wRes.status === "fulfilled" && wRes.value.data.success) {
+          setWeeklyData(wRes.value.data.weekly || []);
+        }
+        if (bRes.status === "fulfilled" && bRes.value.data.success) {
+          setBlockedSites(bRes.value.data.sites || []);
+        }
+        if (dRes.status === "fulfilled" && dRes.value.data.success) {
+          setDopamine(dRes.value.data || { spikes: [], threshold: 3 });
+          setDopamine(dRes.value.data);
+        }
+        if (devRes.status === "fulfilled" && devRes.value.data.success) {
+          setDevices(devRes.value.data.devices || []);
+        }
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+      }
+    };
+
+    if (user) load();
+  }, [user]);
 
   // 🛑 Detect ACTIVE status using backend expiry
   const isActive =
@@ -189,6 +242,44 @@ export default function Dashboard() {
             </p>
           </motion.div>
         </div>
+
+        {/* Weekly chart + blocked sites */}
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
+          <WeeklyFocusChart
+            data={weeklyData.map((r) => ({
+              ...r,
+              focusTime: Math.round(r.focusTime),
+            }))}
+          />
+          <BlockedSitesList sites={blockedSites} />
+        </div>
+
+        {/* Recent activity */}
+        <section className="mt-8">
+          <h3 className="text-white/90 font-semibold mb-4">Recent activity</h3>
+          <div className="space-y-3">
+            {activities.length === 0 && (
+              <div className="text-white/60">No activity yet</div>
+            )}
+            {activities
+              .flatMap((a) => a.details || [])
+              .slice(0, 20)
+              .map((it, idx) => (
+                <ActivityCard key={idx} item={it} />
+              ))}
+          </div>
+        </section>
+
+        {/* Devices */}
+        <section className="mt-8 md:mt-12">
+          <h3 className="text-white/90 font-semibold mb-4">Devices</h3>
+          <DevicesList
+            devices={devices}
+            onRefresh={() => {
+              /* optionally refetch devices */
+            }}
+          />
+        </section>
       </section>
     </main>
   );
