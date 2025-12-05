@@ -1,6 +1,15 @@
 // src/extension/utils/auth.js
 
-const API = "http://127.0.0.1:5000"; // backend API
+import { getBackendUrl, DEFAULT_API } from "./backend.js";
+
+let cachedApiBase = null;
+
+async function apiBase() {
+  if (cachedApiBase) return cachedApiBase;
+  const resolved = await getBackendUrl();
+  cachedApiBase = resolved || DEFAULT_API;
+  return cachedApiBase;
+}
 
 /* ============================================================
    DEVICE ID (PERSIST FOREVER)
@@ -67,7 +76,8 @@ export async function extensionLogin(email, password) {
       browser: navigator.userAgent,
     };
 
-    const res = await fetch(`${API}/api/extension/login`, {
+    const api = await apiBase();
+    const res = await fetch(`${api}/api/extension/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, deviceInfo }),
@@ -78,6 +88,7 @@ export async function extensionLogin(email, password) {
     // Login success
     if (res.ok && data.token) {
       await setToken(data.token);
+      cachedApiBase = api;
       return {
         success: true,
         token: data.token,
@@ -108,7 +119,8 @@ export async function verifyExtensionToken() {
     const token = await getToken();
     if (!token) return { success: false, active: false };
 
-    const res = await fetch(`${API}/api/extension/verify`, {
+    const api = await apiBase();
+    const res = await fetch(`${api}/api/extension/verify`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",

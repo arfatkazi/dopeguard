@@ -1,3 +1,5 @@
+import { getBackendUrl } from "./utils/backend.js";
+
 console.log("🧠 DopeGuard Background Loaded");
 
 /* ============================================================
@@ -19,7 +21,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       try {
-        const r = await fetch("http://127.0.0.1:5000/api/extension/verify", {
+        const api = await getBackendUrl();
+        const r = await fetch(`${api}/api/extension/verify`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -63,7 +66,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!st.dg_token) return;
 
       try {
-        await fetch("http://127.0.0.1:5000/api/activity", {
+        const api = await getBackendUrl();
+        await fetch(`${api}/api/activity`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

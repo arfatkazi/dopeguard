@@ -5,7 +5,11 @@
 
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
 
-  "host_permissions": ["http://127.0.0.1:5000/*", "http://localhost:5000/*"],
+  "host_permissions": [
+    "http://127.0.0.1:5000/*",
+    "http://localhost:5000/*",
+    "https://*/*"
+  ],
 
   "background": {
     "service_worker": "background.js"
