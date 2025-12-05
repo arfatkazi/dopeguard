@@ -148,6 +148,18 @@ const SRC_CACHE = new Map();
 let nsfwModel = null;
 window.__DOPEGUARD_ACTIVE = false;
 
+const BLOCKED_SOCIALS = new Set([
+  "instagram.com",
+  "www.instagram.com",
+  "tiktok.com",
+  "www.tiktok.com",
+  "snapchat.com",
+  "www.snapchat.com",
+  "x.com",
+  "twitter.com",
+  "www.twitter.com",
+]);
+
 // Model file (must exist inside extension/model/)
 const MODEL_PATH = safeURL("model/model.json");
 
@@ -341,6 +353,13 @@ const SAFE_DOMAINS = new Set([
   "archive.org",
 ]);
 
+function isSafeDomain(hostname) {
+  const host = hostname.replace("www.", "").toLowerCase();
+  for (const d of SAFE_DOMAINS) {
+    if (host === d || host.endsWith("." + d)) return true;
+  }
+  return false;
+}
 /* =============================================================
    RISKY_WORDS PLACEHOLDER (YOU WILL PASTE IT HERE)
    ============================================================= */
@@ -872,6 +891,7 @@ function scanByKeywords() {
 
 function isPornDomain() {
   const h = location.hostname.replace("www.", "").toLowerCase();
+  if (isSafeDomain(h)) return false;
   return RISKY_REGEX.test(h) || RISKY_REGEX.test(location.href.toLowerCase());
 }
 
@@ -880,12 +900,16 @@ function isPornDomain() {
    ============================================================= */
 function shouldActivate() {
   try {
-    const url = location.href.toLowerCase();
     const host = location.hostname.replace("www.", "").toLowerCase();
 
-    // Skip whitelisted domains
-    for (const d of SAFE_DOMAINS) {
-      if (host === d || host.endsWith("." + d)) return false;
+    // Skip whitelisted domains completely
+    if (isSafeDomain(host)) return false;
+
+    // Explicitly block social media surfaces
+    for (const social of BLOCKED_SOCIALS) {
+      if (host === social || host.endsWith("." + social.replace(/^\*\./, ""))) {
+        return true;
+      }
     }
 
     // 🚀 New: Very strong porn detection
@@ -1070,6 +1094,7 @@ async function classifyBatch(elements) {
 // =======================
 function pageContainsNSFWText() {
   try {
+    if (isSafeDomain(location.hostname)) return false;
     // 1) URL check (strong)
     const url = location.href.toLowerCase();
     if (RISKY_REGEX.test(url)) return true;
@@ -1101,9 +1126,7 @@ async function scanLoop() {
     if (document.hidden) return;
 
     const host = location.hostname.toLowerCase();
-    for (const d of SAFE_DOMAINS)
-      if (host === d || host.endsWith("." + d)) return;
-
+    if (isSafeDomain(host)) return;
     if (pageContainsNSFWText()) {
       enforceShield();
       return;
