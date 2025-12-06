@@ -270,6 +270,7 @@ const SAFE_DOMAINS = new Set([
   "anthropic.com",
   "replit.com",
   "cursor.sh",
+  "chatgpt.com",
 
   // Developer Tools
   "github.com",
@@ -303,6 +304,8 @@ const SAFE_DOMAINS = new Set([
   "jiosaavn.com",
   "gaana.com",
   "wynk.in",
+  "google.com",
+  "google.co.in",
 
   // E-commerce
   "amazon.in",
@@ -371,7 +374,6 @@ const SAFE_DOMAINS = new Set([
   "uber.com",
   "olaelectric.com",
   "olacabs.com",
-  "https://chatgpt.com/",
 
   // Utilities
   "weather.com",
@@ -388,6 +390,23 @@ function isSafeDomain(hostname) {
     if (host === d || host.endsWith("." + d)) return true;
   }
   return false;
+}
+
+function isSearchEngineHost(host) {
+  host = host.replace("www.", "").toLowerCase();
+
+  return (
+    host === "google.com" ||
+    host.endsWith(".google.com") || // images.google.com, etc.
+    host === "google.co.in" ||
+    host.endsWith(".google.co.in") ||
+    host === "bing.com" ||
+    host.endsWith(".bing.com") ||
+    host === "duckduckgo.com" ||
+    host.endsWith(".duckduckgo.com") ||
+    host === "yahoo.com" ||
+    host.endsWith(".yahoo.com")
+  );
 }
 /* =============================================================
    RISKY_WORDS PLACEHOLDER (YOU WILL PASTE IT HERE)
@@ -914,26 +933,21 @@ function isPornDomain() {
 function shouldActivate() {
   try {
     const host = location.hostname.replace("www.", "").toLowerCase();
+    const isSearchHost = isSearchEngineHost(host);
 
-    // Skip whitelisted domains completely
-    if (isSafeDomain(host)) return false;
+    // Skip whitelisted domains completely,
+    // BUT NOT for search engines (Google, Bing, etc.)
+    if (isSafeDomain(host) && !isSearchHost) return false;
 
+    // Social media surfaces always candidates
     if (BLOCKED_SOCIALS.has(host)) return true;
 
+    // Strong porn-domain check
     if (isPornDomain()) return true;
 
-    // // Explicitly block social media surfaces
-    // for (const social of BLOCKED_SOCIALS) {
-    //   if (host === social || host.endsWith("." + social.replace(/^\*\./, ""))) {
-    //     return true;
-    //   }
-    // }
-
-    // 🚀 New: Very strong porn detection
-
-    // Query parameters (Google search)
+    // For search engines: check search query aggressively
     const q = new URLSearchParams(location.search).get("q") || "";
-    if (q && RISKY_REGEX.test(q)) return true;
+    if (q && RISKY_REGEX.test(q.toLowerCase())) return true;
 
     // Page title
     if (RISKY_REGEX.test(document.title.toLowerCase())) return true;
@@ -1054,7 +1068,7 @@ async function ensureModel() {
       return null;
     }
 
-    nsfwModel = await nsfwjs.load(safeURL("model/model.json"), { size: 224 });
+    nsfwModel = await nsfwjs.load(MODEL_PATH, { size: 224 });
     window.__DGModel = nsfwModel;
     console.log("DopeGuard: model loaded");
     return nsfwModel;
@@ -1110,23 +1124,32 @@ async function classifyBatch(elements) {
 // =======================
 function pageContainsNSFWText() {
   try {
-    if (isSafeDomain(location.hostname)) return false;
-    // 1) URL check (strong)
+    const host = location.hostname.replace("www.", "").toLowerCase();
+    const isSearchHost = isSearchEngineHost(host);
+
+    // 1) URL check (strong for all sites)
     const url = location.href.toLowerCase();
     if (RISKY_REGEX.test(url)) return true;
 
-    // 2) Query parameter check
+    // 2) Query parameter check (this is where q=porn, q=xxx, etc. will trigger)
     const q = new URLSearchParams(location.search).get("q") || "";
     if (q && RISKY_REGEX.test(q.toLowerCase())) return true;
 
-    // 3) Search-box value (Google, X, Instagram, TikTok)
+    // 🔑 IMPORTANT: on search engines, STOP here.
+    // We don't scan the full page text to avoid SafeSearch / help text
+    // accidentally triggering the shield.
+    if (isSearchHost) {
+      return false;
+    }
+
+    // 3) Search-box value (normal sites, social, etc.)
     const inputs = document.querySelectorAll("input, textarea");
     for (const i of inputs) {
       const v = (i.value || "").toLowerCase();
       if (v && RISKY_REGEX.test(v)) return true;
     }
 
-    // 4) Body text (limit size)
+    // 4) Body text (limit size) — non-search sites only
     const text = (document.body?.innerText || "").toLowerCase();
     if (text.length < 250000 && RISKY_REGEX.test(text)) return true;
 
@@ -1141,8 +1164,14 @@ async function scanLoop() {
     if (!window.__DOPEGUARD_ACTIVE) return;
     if (document.hidden) return;
 
-    const host = location.hostname.toLowerCase();
-    if (isSafeDomain(host)) return;
+    const host = location.hostname.replace("www.", "").toLowerCase();
+    const isSearchHost = isSearchEngineHost(host);
+
+    // On non-search safe domains, skip scanning completely
+    // (but DO scan on search engines like Google, Bing, etc.)
+    if (isSafeDomain(host) && !isSearchHost) return;
+
+    // If page text / URL / query are NSFW → full shield
     if (pageContainsNSFWText()) {
       enforceShield();
       return;
@@ -1188,6 +1217,20 @@ async function scanLoop() {
   } catch {}
 }
 
+async function verifySubscription() {
+  try {
+    const res = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: "verifyToken" }, (reply) => {
+        resolve(reply);
+      });
+    });
+    return res;
+  } catch (e) {
+    console.warn("DopeGuard: verifyToken message failed", e);
+    return null;
+  }
+}
+
 /* =============================================================
    INIT (subscription check FIXED)
    ============================================================= */
@@ -1200,7 +1243,7 @@ async function scanLoop() {
       );
     }
 
-    const res = await chrome.runtime.sendMessage({ action: "verifyToken" });
+    const res = await verifySubscription();
 
     if (res?.active === false) {
       console.warn(

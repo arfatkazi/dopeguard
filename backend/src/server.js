@@ -147,7 +147,7 @@ app.use(async (req, res, next) => {
 // =============================================================
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100,
+  max: isProd ? 600 : Number.MAX_SAFE_INTEGER,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many requests, slow down." },
