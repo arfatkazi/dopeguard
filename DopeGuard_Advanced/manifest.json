@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DopeGuard 🧠 AI Shield",
+  "description": "Advanced deep distraction protection.",
   "version": "1.0.0",
 
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
