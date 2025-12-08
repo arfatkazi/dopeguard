@@ -211,6 +211,46 @@ const SAFE_DOMAINS = [
 ];
 
 // =============================================================
+// 🔑 Essential / Starter subscription status (from background)
+// =============================================================
+function withEssentialStatus(callback) {
+  try {
+    if (!chrome?.storage?.local) {
+      console.warn("DopeGuard: chrome.storage.local not available, fail-open.");
+      // If you prefer fail-CLOSE instead, change active -> false
+      callback(false, {
+        reason: "no_storage",
+        plan: null,
+        exp: null,
+      });
+      return;
+    }
+
+    chrome.storage.local.get(
+      [
+        "essentialActive",
+        "essentialReason",
+        "essentialPlan",
+        "essentialExpiry",
+      ],
+      (data) => {
+        const active = !!data.essentialActive;
+        const meta = {
+          reason:
+            data.essentialReason || (active ? "active" : "inactive_or_no_key"),
+          plan: data.essentialPlan || null,
+          exp: data.essentialExpiry || null,
+        };
+        callback(active, meta);
+      }
+    );
+  } catch (e) {
+    console.warn("DopeGuard: error reading Essential status", e);
+    callback(false, { reason: "error", plan: null, exp: null });
+  }
+}
+
+// =============================================================
 // 🚀 SMART ENTRY LOGIC
 // =============================================================
 function shouldActivate() {
@@ -526,15 +566,42 @@ function startOrActivate() {
   shouldActivate() ? activateBlackScreen() : startDopaGuard();
 }
 
+// =============================================================
+// 🔑 Wire Extreme Mode to Essential subscription status
+// =============================================================
+function initDopaGuard() {
+  withEssentialStatus((active, meta) => {
+    if (!active) {
+      console.log(
+        "❌ DopeGuard Essential is OFF — subscription inactive or invalid key.",
+        meta
+      );
+      // If you want a "very light" keyword-only mode when inactive,
+      // you can call a different function here instead of just returning.
+      // e.g. startKeywordOnlyMode();
+      return;
+    }
+
+    console.log(
+      "✅ DopeGuard Essential is ACTIVE — plan:",
+      meta.plan,
+      "exp:",
+      meta.exp
+    );
+    // Old behavior: decide per-site (black screen vs AI scan)
+    startOrActivate();
+  });
+}
+
 // Initial run
-startOrActivate();
+initDopaGuard();
 
 // SPA URL watcher
 let lastUrl = location.href;
 new MutationObserver(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href;
-    startOrActivate();
+    initDopaGuard(); // re-check subscription + rerun entry logic
   }
 }).observe(document, { childList: true, subtree: true });
 

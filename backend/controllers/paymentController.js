@@ -79,7 +79,21 @@ export const verifyPayment = async (req, res) => {
       expiry.setDate(expiry.getDate() + (durationMap[plan] || 30));
       user.planExpiry = expiry;
 
+      // 🔑 Starter / Essential key generation for STARTER plan
+      if (plan === "STARTER") {
+        // generate key only if user doesn't have one yet
+        if (!user.starterKey) {
+          // 8-char hex key, e.g. "A3F9C2B1"
+          user.starterKey = crypto.randomBytes(4).toString("hex").toUpperCase();
+          user.starterKeyCreatedAt = new Date();
+        }
+
+        // make sure key is active if subscription is active
+        user.starterKeyActive = true;
+      }
+
       await user.save();
+
       return res
         .status(200)
         .json({ success: true, message: "Payment verified", user });

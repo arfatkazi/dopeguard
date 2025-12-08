@@ -18,6 +18,7 @@ import cron from "node-cron";
 import { expireSubscriptions } from "./jobs/expiryJob.js";
 import activityRoutes from "../routes/activityRoutes.js";
 import deviceRoutes from "../routes/deviceRoutes.js";
+import userRoutes from "../routes/userRoutes.js";
 
 // ✅ Load environment variables first
 dotenv.config();
@@ -26,6 +27,7 @@ connectDB();
 // ✅ Import Routes
 import authRoutes from "../routes/authRoutes.js";
 import paymentRoutes from "../routes/paymentRoutes.js";
+import starterExtensionRoutes from "../routes/starterExtensionRoutes.js";
 
 // ✅ Initialize Express App
 const app = express();
@@ -162,6 +164,8 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/extension", extensionRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/devices", deviceRoutes);
+app.use("/api/extension/starter", starterExtensionRoutes);
+app.use("/api/user", userRoutes);
 
 // =============================================================
 // ❤️ Health Check Endpoint

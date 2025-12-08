@@ -50,6 +50,25 @@ const userSchema = new mongoose.Schema(
       default: "none",
     },
 
+    // 🔑 Starter / Essential extension access key
+    starterKey: {
+      type: String,
+      unique: true,
+      sparse: true, // allows many users without keys
+    },
+    starterKeyActive: {
+      type: Boolean,
+      default: false,
+    },
+    starterKeyCreatedAt: {
+      type: Date,
+      default: null,
+    },
+    starterKeyLastUsedAt: {
+      type: Date,
+      default: null,
+    },
+
     // 💰 Razorpay Payment Details (only filled after successful payment)
     razorpayOrderId: { type: String, default: null },
     razorpayPaymentId: { type: String, default: null },

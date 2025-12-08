@@ -4,6 +4,8 @@ import path from "path";
 import fs from "fs";
 import { ok, fail } from "../utils/response.js";
 
+const EXT_DIR = path.join(process.cwd(), "public", "extensions");
+
 /**
  * GET /api/user/me
  */
@@ -29,9 +31,9 @@ export const updateProfile = async (req, res) => {
 
     const { name } = req.body;
     if (name) user.name = name.trim();
-    // never allow changing sensitive fields here (plan, payments etc)
-    await user.save();
+    // ❗ do not allow plan/payment changes here
 
+    await user.save();
     return ok(res, { user }, "Profile updated");
   } catch (err) {
     console.error("updateProfile error:", err);
@@ -40,7 +42,7 @@ export const updateProfile = async (req, res) => {
 };
 
 /**
- * GET /api/user/devices
+ * GET /api/user/me/devices
  */
 export const listDevices = async (req, res) => {
   try {
@@ -54,18 +56,12 @@ export const listDevices = async (req, res) => {
 };
 
 /**
- * GET /api/user/extension-download
- * Sends the extension ZIP stored on server (you must create zip at path)
+ * (legacy) GET /api/user/extension-download
+ * Single ZIP download if you still need it
  */
 export const downloadExtension = async (req, res) => {
   try {
-    // NOTE: put your zip in backend/public/extensions/dopeguard-extension.zip
-    const zipPath = path.join(
-      process.cwd(),
-      "public",
-      "extensions",
-      "dopeguard-extension.zip"
-    );
+    const zipPath = path.join(EXT_DIR, "dopeguard-extension.zip");
     if (!fs.existsSync(zipPath)) return fail(res, 404, "Extension not found");
 
     res.setHeader(
@@ -75,6 +71,82 @@ export const downloadExtension = async (req, res) => {
     res.sendFile(zipPath);
   } catch (err) {
     console.error("downloadExtension error:", err);
+    return fail(res, 500, "Server error");
+  }
+};
+
+/**
+ * GET /api/user/download/starter
+ * → DopeGuard Essential / Starter extension ZIP
+ */
+export const downloadStarterExtension = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      "plan subscriptionStatus"
+    );
+    if (!user) return fail(res, 404, "User not found");
+
+    if (user.subscriptionStatus !== "active") {
+      return fail(res, 403, "Your subscription is not active");
+    }
+
+    const allowedPlans = ["STARTER", "FOCUS_PACK", "GROWTH", "ELITE"];
+    if (!allowedPlans.includes(user.plan)) {
+      return fail(
+        res,
+        403,
+        "Your current plan does not include the Starter extension"
+      );
+    }
+
+    const zipPath = path.join(EXT_DIR, "dopeguard-starter.zip");
+    if (!fs.existsSync(zipPath)) return fail(res, 404, "Starter ZIP not found");
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=dopeguard-starter.zip"
+    );
+    return res.sendFile(zipPath);
+  } catch (err) {
+    console.error("downloadStarterExtension error:", err);
+    return fail(res, 500, "Server error");
+  }
+};
+
+/**
+ * GET /api/user/download/premium
+ * → DopeGuard Premium extension ZIP
+ */
+export const downloadPremiumExtension = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      "plan subscriptionStatus"
+    );
+    if (!user) return fail(res, 404, "User not found");
+
+    if (user.subscriptionStatus !== "active") {
+      return fail(res, 403, "Your subscription is not active");
+    }
+
+    const allowedPlans = ["STARTER", "FOCUS_PACK", "GROWTH", "ELITE"];
+    if (!allowedPlans.includes(user.plan)) {
+      return fail(
+        res,
+        403,
+        "Your current plan does not include the Premium extension"
+      );
+    }
+
+    const zipPath = path.join(EXT_DIR, "dopeguard-premium.zip");
+    if (!fs.existsSync(zipPath)) return fail(res, 404, "Premium ZIP not found");
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=dopeguard-premium.zip"
+    );
+    return res.sendFile(zipPath);
+  } catch (err) {
+    console.error("downloadPremiumExtension error:", err);
     return fail(res, 500, "Server error");
   }
 };
