@@ -6,15 +6,15 @@ if not exist "extension" mkdir extension
 
 :: === Bundle content_entry.js ===
 echo 🧠 Bundling content_entry.js ...
-npx esbuild src/content_entry.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/content_entry.js
+call npx esbuild src/content_entry.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/content_entry.js
 
 :: === Bundle background.js ===
 echo ⚙️  Bundling background.js ...
-npx esbuild src/background.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/background.bundle.js
+call npx esbuild src/background.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/background.bundle.js
 
 :: === Bundle popup.js ===
 echo 💬 Bundling popup.js ...
-npx esbuild src/popup.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/popup.bundle.js
+call npx esbuild src/popup.js --bundle --platform=browser --minify --target=es2017 --outfile=extension/popup.bundle.js
 
 :: === Copy static assets ===
 echo 📦 Copying static assets...

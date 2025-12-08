@@ -26,16 +26,71 @@
         border-radius: 8px;
         margin-top: 12px;
       }
+      input {
+        outline: none;
+      }
+      button {
+        outline: none;
+      }
     </style>
   </head>
   <body>
     <img src="dopeguard.jpg" alt="DopeGuard" />
     <h3>DopeGuard Shield</h3>
     <p>🧠 Always ON — AI Protection Active</p>
+
+    <!-- 🔢 Stats panel -->
     <div class="info">
       <div id="blocks">Blocks today: 0</div>
       <div id="mode">Mode: Auto</div>
     </div>
+
+    <!-- 🔑 Essential key panel -->
+    <div class="info" style="margin-top: 12px; text-align: left">
+      <div style="font-weight: 600; margin-bottom: 6px">
+        Essential Subscription Key
+      </div>
+
+      <input
+        id="essentialKeyInput"
+        type="text"
+        placeholder="Paste your key here"
+        style="
+          width: 100%;
+          padding: 6px;
+          border-radius: 6px;
+          border: none;
+          margin-bottom: 6px;
+          background: #020617;
+          color: #e4f5ff;
+        "
+      />
+
+      <button
+        id="saveKeyBtn"
+        style="
+          width: 100%;
+          padding: 6px;
+          border-radius: 6px;
+          border: none;
+          background: #2cf9a3;
+          color: #020617;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Save Key
+      </button>
+
+      <div
+        id="essentialStatus"
+        style="font-size: 12px; color: #9ca3af; margin-top: 4px"
+      >
+        Status: unknown
+      </div>
+    </div>
+
+    <!-- your bundled popup script -->
     <script src="popup.bundle.js"></script>
   </body>
 </html>

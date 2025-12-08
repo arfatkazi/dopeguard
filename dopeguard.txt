@@ -1919,3 +1919,745 @@ complete analytics pipeline
 ✔ Backend — DONE
 ✔ Website — DONE (small fix needed)
 ⚠ Extension — PARTIALLY DONE (needs finishing)
+
+
+
+
+
+7 December 2025
+----------------------------------------------------------------------------------------------------------------------------------------------
+Here’s your full dev note for all 4 zips (backend + frontend + both extensions) as one system 👇
+
+🚨 First Important Thing
+
+In many files (especially backend & some frontend) I can see literal lines with just:
+
+...
+
+
+That is not valid JavaScript → those files, if you run them, will crash on startup.
+
+So:
+
+The architecture and logic are mostly designed ✅
+
+But the actual code is cut in the middle in some places ⛔
+
+Those ... parts = missing code that must be re-written.
+
+I’ll still tell you what is clearly done, what is partially done, and what is missing/pending.
+
+📦 1) Backend API (Node + Express + Mongo + Razorpay)
+✅ Completed
+
+Project structure ready
+
+config/, controllers/, routes/, middleware/, models/, services/, utils/, src/jobs/
+
+Clean separation of concerns.
+
+Server & security layer
+
+src/server.js with:
+
+Express app
+
+cors, helmet, compression, morgan, cookie-parser, rate-limit
+
+arcjet integration for bot/abuse protection.
+
+config/db.js → connects to MongoDB DopeGuard DB.
+
+Environment / config
+
+.env present with:
+
+PORT, NODE_ENV
+
+MONGO_URI
+
+JWT_SECRET
+
+RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+
+Mail SMTP settings and RESET_URL
+
+⚠️ Real SMTP/email creds are inside .env → should not be committed in real repo; rotate in production.
+
+User model
+
+models/User.js
+
+Name, email, password
+
+Subscription-related fields (plan, expiry, status)
+
+Password hash with bcrypt
+
+comparePassword method.
+
+Auth controller & flow
+
+controllers/authController.js includes:
+
+Register + Login logic
+
+Uses generateToken from utils/jwt.js
+
+Writes secure HTTP-only auth cookie.
+
+utils/jwt.js present to sign/verify tokens.
+
+Payment & subscription
+
+controllers/paymentController.js
+
+createOrder with Razorpay using plan name → amount map.
+
+verifyPayment that checks Razorpay signature and updates user:
+
+currentPlan
+
+planExpiry
+
+subscriptionStatus = "active"
+
+routes/paymentRoutes.js
+
+POST /api/payment/create-order (protected)
+
+POST /api/payment/verify-payment (protected)
+
+Activities / analytics
+
+controllers/activityController.js
+
+services/analyticsService.js
+
+models/Activity.js, models/DopamineSpike.js, etc.
+
+Logic for:
+
+Storing user activity per day
+
+Weekly stats
+
+Dopamine spikes.
+
+Devices
+
+models/Device.js
+
+controllers/deviceController.js for listing/saving devices.
+
+User profile & extension download
+
+controllers/userController.js
+
+getProfile, updateProfile, listDevices
+
+downloadExtension that sends a static downloads/dopeguard-extension.zip
+
+routes/userRoutes.js
+
+/me, /me/devices, /extension-download (all protected).
+
+Extensions login/verify (Premium)
+
+controllers/extensionController.js
+
+Uses User + JWT
+
+Has extensionLogin + extensionVerify structure.
+
+routes/extensionRoutes.js
+
+POST /api/extension/login
+
+GET /api/extension/verify
+
+Background job
+
+src/jobs/expiryJob.js
+
+Marks users with past planExpiry as subscriptionStatus = "expired".
+
+⚠️ Partial / Needs Improvement
+
+authMiddleware (middleware/authMiddleware.js)
+
+Designed to:
+
+Read token from cookie or Authorization: Bearer <token>.
+
+Verify JWT → load user → attach on req.user.
+
+BUT the file has a literal ... in the middle → code is missing.
+
+Backend cannot run until that ... is replaced with real logic.
+
+extensionController (Premium extension)
+
+Structure for login & verify is there.
+
+But again, there is a ... in the middle → some logic between missing.
+
+Likely: fetching user, validating subscription, creating token response for extension.
+
+paymentController
+
+Top and bottom are implemented (create order, final response).
+
+Middle has ... → missing some important logic:
+
+Plan → duration map,
+
+Setting plan on user,
+
+Maybe creating starter key after payment.
+
+starterExtensionController
+
+File exists & has:
+
+generateStarterKey() helper
+
+Comments describing:
+
+/api/extension/starter/activate
+
+/api/extension/starter/verify
+
+/api/extension/starter/deactivate
+
+But the actual function bodies between top and bottom are replaced by ....
+
+So Starter key system on backend is only ~40% designed but not coded.
+
+User model
+
+Core fields are there, but since middle is also ..., some extra fields or validations might be missing.
+
+User extension download
+
+downloadExtension currently serves one single zip:
+
+dopeguard-extension.zip
+
+No logic yet for:
+
+Starter vs Premium separate zips
+
+Access rules based on plan.
+
+⏳ Pending / Missing
+
+Replace all ... placeholders with working code in:
+
+authMiddleware.js
+
+extensionController.js
+
+paymentController.js
+
+starterExtensionController.js
+
+Possibly parts of User.js, activityController.js, etc.
+
+Starter key system (backend side)
+
+Proper activateStarterKey:
+
+Check if user has active Starter-related plan.
+
+Generate key, save to user, mark active.
+
+verifyStarterKey:
+
+Look up user by key.
+
+Check subscription still active & not revoked.
+
+Return minimal data for Basic extension.
+
+deactivateStarterKey:
+
+For user revoking/removing device or cancelling.
+
+Separate download endpoints
+
+Currently only dopeguard-extension.zip.
+
+Need something like:
+
+/api/user/download/starter
+
+/api/user/download/premium
+
+Each should:
+
+Check subscriptionStatus === 'active'
+
+Optionally check plan tier and key status.
+
+📊 Rough Progress – Backend
+
+Concept / architecture: ~90% done
+
+Actual code present: ~70%
+
+Code that compiles & runs today: lower, because ... breaks files.
+
+So: I’d call backend ~70–75% complete, but BLOCKED until you implement the missing pieces.
+
+📦 2) Frontend (Vite + React)
+✅ Completed
+
+Project setup
+
+Vite React app
+
+package.json with:
+
+React, React Router, Framer Motion, axios, Tailwind, etc.
+
+frontend/.env with VITE_BACKEND_URL=http://127.0.0.1:5000
+
+Pages
+
+Home, About, Pricing, Contact
+
+Dashboard
+
+PaymentFailed, Success
+
+ForgotPassword, ResetPassword
+
+Upgrade
+
+All wired via App.jsx routes.
+
+Components
+
+Navbar, Hero, Features, Testimonials, CTA, Footer
+
+Dashboard components:
+
+ActivityCard, DevicesList, WeeklyFocusChart, BlockedSitesList
+
+Auth modal (AuthModal.jsx) integrated.
+
+API integration helpers
+
+src/utils/api.js
+
+Wraps fetch to ${VITE_BACKEND_URL}.
+
+Accepts token from localStorage (dg_ext_token) and attaches Authorization header.
+
+Razorpay helper in src/utils/razorpay.js for payment integration.
+
+Dashboard logic
+
+Dashboard.jsx:
+
+Calls /api/auth/verify to get current user from backend.
+
+Uses service functions like fetchActivities, fetchWeeklyStats, etc. to populate charts.
+
+⚠️ Partial / Needs Improvement
+
+Some code sections are truncated with ...
+
+App.jsx has a literal ... inside → will break the build.
+
+Possibly inside other large files (like Dashboard.jsx, etc.) → I can see mid-file ... markers.
+
+Same issue as backend: these must be filled with real code.
+
+Extension download UX
+
+There isn’t yet a clear “after payment, show two download buttons (Starter & Premium)” fully wired to backend endpoints.
+
+Success page likely just shows generic success, not the actual zip links from backend.
+
+No visible Starter key UI
+
+I don’t see a clear UX flow for:
+
+Displaying Starter key to user.
+
+Regenerating or revoking it.
+
+Showing “Your Basic key: XXXX-XXXX”.
+
+⏳ Pending
+
+Fix all places with ... so frontend compiles.
+
+Implement on UI:
+
+“Download DopeGuard Starter” button → hits Starter zip endpoint.
+
+“Download DopeGuard Premium” button → hits Premium zip endpoint.
+
+(Later) show Starter key on dashboard (read from /api/extension/starter/activate / user profile).
+
+📊 Rough Progress – Frontend
+
+Design/UI/pages: ~90% done
+
+API integration: ~75–80% done
+
+Gating and extension-download flows: ~40–50% done
+
+Because of the ... problem, build will fail right now, so practically this is also blocked.
+
+📦 3) DopeGuard Premium Extension (Advanced – email/password)
+
+Path: DopeGuard_Premium.zip / DopeGuard_Advanced/
+
+✅ Completed
+
+Manifest v3
+
+DopeGuard_Advanced/manifest.json
+
+Background script, content script, host permissions including:
+
+http://127.0.0.1:5000/*
+
+http://localhost:5000/*
+
+https://*/* (generic)
+
+Backend URL handling
+
+src/utils/backend.js
+
+Default: http://127.0.0.1:5000
+
+Reads backend_url from chrome.storage.sync so you can set production API later.
+
+API wrapper
+
+src/utils/api.js
+
+Uses getToken() + getBackendUrl()
+
+request(path, options)
+
+verifyPlan() → calls /api/extension/verify.
+
+Auth helpers
+
+src/utils/auth.js
+
+Stores token in chrome.storage.local (dg_token).
+
+Manages deviceId (permanent ID).
+
+Has extensionLogin(email, password) that:
+
+Builds deviceInfo
+
+Calls backend extension login endpoint (via apiBase()).
+
+AI model + blocking
+
+extension/model/* with TensorFlow model.
+
+background.js, content_entry.js, adult_keywords.js etc. for:
+
+Scanning images/content
+
+Blocking NSFW.
+
+Build artifacts
+
+extension/* has bundled JS (background.js, popup.js, etc.) already compiled.
+
+⚠️ Partial / Needs Improvement
+
+Assumes backend is ready
+
+Calls /api/extension/login & /api/extension/verify which are present in backend, but those backend functions are incomplete because of ....
+
+So extension cannot fully work in production until backend extensionController is finished.
+
+Config / onboarding
+
+No UI yet (from what I see) for:
+
+Setting custom backend URL in options page.
+
+manifest.json doesn’t define a separate options page (only action popup).
+
+⏳ Pending
+
+Finish backend:
+
+extensionLogin and extensionVerify logic.
+
+Add:
+
+A small “Settings / Options” UI to choose backend URL (optional but nice).
+
+Testing:
+
+Run end-to-end: login via extension, verify plan, block based on subscription.
+
+📊 Rough Progress – Premium Extension
+
+Extension core (AI + blocking + manifest): ~90–95% done
+
+Backend-integration stability (login/verify): ~60–70% (blocked by backend)
+
+📦 4) DopeGuard Starter / Basic Extension (Essential – no login)
+
+Path: DopeGuard_Starter.zip / DopeGuard_Basic/DopaGuard_EXT/
+
+✅ Completed
+
+Manifest v3
+
+src/manifest.json + built extension/manifest.json
+
+Permissions, content scripts, icons.
+
+AI Blocking engine
+
+src/content_entry.js:
+
+Uses @tensorflow/tfjs + nsfwjs
+
+Has big adult keywords + allowed sites lists.
+
+Very aggressive, “extreme defense” style blocking.
+
+No login, no backend.
+
+Build output
+
+extension/ has:
+
+background.bundle.js
+
+content.js / content_entry.js (bundled)
+
+Assets (icons, images).
+
+⚠️ Partial / Needs Improvement
+
+No backend integration yet
+
+This Basic extension currently behaves like a fully offline, lifetime free shield.
+
+There is no code calling backend like /api/extension/starter/verify.
+
+Starter key concept is only on backend
+
+Backend has starterExtensionController with comments about a key system.
+
+Starter extension JS still uses a pure local logic:
+
+No fetch to backend.
+
+No reading of any "key".
+
+⏳ Pending
+
+To match your business plan (“Essential – quick setup, but controlled by backend key”), you need:
+
+Add a small auth/key layer in Starter extension:
+
+On install / on browser start:
+
+Read local stored starterKey from chrome.storage.sync/local.
+
+Call backend GET /api/extension/starter/verify?key=XXXX.
+
+If backend says not active / expired → block extension or show message.
+
+Provide a simple way for user to paste key (popup.html or simple options page).
+
+After payment (website):
+
+Backend: generate key and store on user.
+
+Frontend: show the key + link: “Download Essential Extension”.
+
+User flows:
+
+Download & install.
+
+Open popup → paste key → extension verifies with backend.
+
+Extension keeps working until backend says expired.
+
+📊 Rough Progress – Starter Extension
+
+NSFW blocking engine: ~90% complete
+
+Licensing / key system: 0–10% (only backend idea, no real integration)
+
+🔑 5) Licensing + Extension Delivery Flow (Business Logic)
+✅ Completed / Designed
+
+Payment + subscription
+
+Razorpay integrated for different plans.
+
+User model can store plan, expiry, and status.
+
+There is already a background job that auto-expires.
+
+Single downloadExtension endpoint exists.
+
+⚠️ Partial / Needs Improvement
+
+No clear separation between:
+
+Starter (Essential) downloadable zip
+
+Premium downloadable zip
+
+No plan-based logic:
+
+Who can download what?
+
+Does Starter plan give both?
+
+Does higher plan include premium-only?
+
+Starter key system:
+
+Controller file exists but is empty internally.
+
+Extension does not use any key.
+
+⏳ Pending – What still needs to be built to match your idea
+
+Plan → Benefits mapping (in backend)
+
+Example:
+
+STARTER → Starter key + Starter extension download.
+
+GROWTH / ELITE → Starter + Premium extension.
+
+Store this mapping centrally (e.g., in a PLAN_CONFIG constant).
+
+Download endpoints
+
+GET /api/user/download/starter
+
+GET /api/user/download/premium
+
+Guard with:
+
+authMiddleware
+
+Subscription active
+
+If required, only for certain plans.
+
+Starter key endpoints
+
+POST /api/extension/starter/activate (website)
+
+GET /api/extension/starter/verify (extension)
+
+POST /api/extension/starter/deactivate (website / account)
+
+Frontend wiring
+
+On Success page after payment:
+
+Show:
+
+“Download Starter Extension”
+
+“Download Premium Extension” (if plan includes)
+
+Show Starter key if relevant:
+
+"Your Essential Access Key: XXXX-XXXX"
+
+💡 Next Steps / Recommendations (Action List for Dev)
+
+If I were handing this to a dev team / Codex, I’d write:
+
+Fix all ... placeholders immediately
+
+Backend: authMiddleware, extensionController, paymentController, starterExtensionController, any other file with naked ....
+
+Frontend: App.jsx, Dashboard.jsx or other truncated components.
+
+Until this is fixed, nothing should be deployed.
+
+Finish Starter key backend
+
+Implement:
+
+activateStarterKey → after payment, generate key & save to user.
+
+verifyStarterKey → extension uses this to validate key.
+
+deactivateStarterKey → user revokes access.
+
+Ensure keys are unique, and maybe limited to 1–2 devices if you want.
+
+Integrate Starter extension with backend
+
+Add:
+
+A minimal popup or options page where user enters key.
+
+fetch call to /api/extension/starter/verify.
+
+If verify fails → extension disables blocking / shows warning.
+
+Separate download logic
+
+In backend:
+
+Place DopeGuard_Starter.zip and DopeGuard_Premium.zip in a downloads/ folder.
+
+Build endpoints that stream correct zip based on user plan.
+
+In frontend:
+
+Success / Dashboard page → show links/buttons pointing to these endpoints.
+
+Test end-to-end flows
+
+Flow A: New user → buy plan → get Starter key → download Starter extension → enter key → verify works.
+
+Flow B: Same user → login in Premium extension → extension login + verify call works → blocking only for active plan.
+
+Flow C: Subscription expiry job runs → user becomes expired → extension verify should start failing.
+
+Security clean-up
+
+Remove real SMTP_USER / SMTP_PASS from repo.
+
+Ensure .env is gitignored.
+
+Use dummy keys in code examples.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------

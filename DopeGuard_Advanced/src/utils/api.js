@@ -22,6 +22,7 @@ export async function request(path, options = {}) {
     const res = await fetch(`${apiBase}${path}`, {
       ...options,
       headers,
+      credentials: "omit",
     });
 
     const data = await res.json().catch(() => ({}));

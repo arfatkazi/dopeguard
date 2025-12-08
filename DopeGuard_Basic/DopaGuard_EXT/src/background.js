@@ -4,6 +4,40 @@
 // Handles block counters, mode persistence, and auto-reset
 // Keeps DopeGuard alive, stable, and ready for real-time AI defense
 
+import { verifyEssentialKey } from "./utils/api.js";
+
+async function refreshEssentialStatus() {
+  const result = await verifyEssentialKey();
+
+  if (!result.ok) {
+    console.warn("DopeGuard Essential: could not verify subscription", result);
+    await chrome.storage.local.set({
+      essentialActive: false,
+      essentialReason: "network",
+    });
+    return { active: false, reason: "network" };
+  }
+
+  const { valid, reason, plan, planExpiry } = result.data;
+
+  if (!valid) {
+    console.log("❌ DopeGuard Essential is OFF — reason:", reason);
+    await chrome.storage.local.set({
+      essentialActive: false,
+      essentialReason: reason || "invalid",
+    });
+    return { active: false, reason: reason || "invalid" };
+  }
+
+  console.log("✅ DopeGuard Essential is ON — plan:", plan, "exp:", planExpiry);
+  await chrome.storage.local.set({
+    essentialActive: true,
+    essentialPlan: plan,
+    essentialExpiry: planExpiry,
+  });
+  return { active: true, plan, planExpiry };
+}
+
 chrome.runtime.onInstalled.addListener((details) => {
   console.log("🧠 DopeGuard Installed — Always ON Protection");
 
@@ -17,6 +51,8 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     console.log("✨ Fresh install detected");
   }
+  // 🔑 Check Essential key + subscription on install
+  refreshEssentialStatus();
 });
 
 // =============================================================
@@ -58,6 +94,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       );
       return true;
 
+    // ✅ NEW: force re-check of Essential key + subscription
+    case "refreshEssentialStatus":
+      refreshEssentialStatus().then((result) => {
+        sendResponse(result);
+      });
+      return true;
+
     default:
       console.warn("⚠️ Unknown message:", msg);
   }
@@ -86,3 +129,10 @@ setInterval(() => {
 setInterval(() => {
   chrome.runtime.getPlatformInfo(() => {});
 }, 5 * 60 * 1000);
+
+// 🔁 Re-check Essential key status every 10 minutes
+setInterval(() => {
+  refreshEssentialStatus();
+}, 10 * 60 * 1000);
+
+refreshEssentialStatus();

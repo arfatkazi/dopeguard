@@ -3,7 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { Shield, BarChart3, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import StarterKeyCard from "../components/StarterKeyCard";
 import ActivityCard from "../components/ActivityCard";
 import DevicesList from "../components/DevicesList";
 import WeeklyFocusChart from "../components/WeeklyFocusChart";
@@ -53,7 +53,7 @@ export default function Dashboard() {
     loadSnapshot("dg.dopamine", { spikes: [], threshold: 3 })
   );
 
-  // 🧠 Always fetch latest backend data (fix for Phase 5)
+  // 🧠 Always fetch latest backend data
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -76,7 +76,7 @@ export default function Dashboard() {
     fetchUser();
   }, []);
 
-  // useEffect to load data (after verifying user)
+  // Load analytics data after we know the user
   useEffect(() => {
     const load = async () => {
       setStatus("");
@@ -165,6 +165,19 @@ export default function Dashboard() {
 
   const handleManageBilling = () => navigate("/upgrade");
 
+  // Derive weekly total focus (optional nicer display)
+  const totalWeeklyFocusMinutes = weeklyData.reduce(
+    (sum, r) => sum + (Number(r.focusTime) || 0),
+    0
+  );
+
+  const formattedWeeklyFocus =
+    totalWeeklyFocusMinutes > 0
+      ? `${Math.floor(totalWeeklyFocusMinutes / 60)}h ${Math.round(
+          totalWeeklyFocusMinutes % 60
+        )}m`
+      : "No data yet";
+
   return (
     <main className="relative min-h-screen bg-[#050913] text-white pt-24 pb-20 overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 blur-[180px] opacity-60 pointer-events-none" />
@@ -208,6 +221,7 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Top cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Focus Insights */}
           <motion.div
@@ -221,9 +235,14 @@ export default function Dashboard() {
               </h3>
               <BarChart3 size={20} className="text-cyan-400" />
             </div>
-            <p className="text-white/70 mb-4">
+            <p className="text-white/70 mb-1">
               Weekly Focus:{" "}
-              <span className="text-cyan-400 font-semibold">6h 22m</span>
+              <span className="text-cyan-400 font-semibold">
+                {formattedWeeklyFocus}
+              </span>
+            </p>
+            <p className="text-[11px] text-white/45">
+              Based on extension activity synced from your devices.
             </p>
           </motion.div>
 
@@ -281,7 +300,7 @@ export default function Dashboard() {
                 {!isActive && (
                   <button
                     onClick={handleManageBilling}
-                    className="px-5 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-all"
+                    className="px-5 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-all text-sm"
                   >
                     Renew Plan
                   </button>
@@ -291,21 +310,17 @@ export default function Dashboard() {
               <p className="text-white/60">No user found</p>
             )}
           </motion.div>
-
-          {/* Focus Trend */}
-          <motion.div
-            whileHover={{ scale: 1.03 }}
-            transition={{ type: "spring", stiffness: 200, damping: 16 }}
-            className="md:col-span-2 rounded-2xl bg-gradient-to-b from-white/5 to-white/0 border border-white/10 p-6 backdrop-blur-md shadow-[0_0_25px_rgba(6,182,212,0.1)]"
-          >
-            <h3 className="text-lg font-semibold text-white mb-3">
-              Focus Trend (Beta)
-            </h3>
-            <p className="text-white/60 text-sm">
-              Advanced insights coming soon.
-            </p>
-          </motion.div>
         </div>
+
+        {/* Extensions & Keys section (StarterKeyCard) */}
+        <section className="mt-8">
+          <h3 className="text-white/90 font-semibold mb-4 text-sm uppercase tracking-wide">
+            Extensions & Keys
+          </h3>
+          <div className="max-w-xl">
+            <StarterKeyCard />
+          </div>
+        </section>
 
         {/* Weekly chart + blocked sites */}
         <div className="grid md:grid-cols-2 gap-6 mt-8">
