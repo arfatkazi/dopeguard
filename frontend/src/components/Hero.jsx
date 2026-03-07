@@ -3,7 +3,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Star, DownloadCloud, Play } from "lucide-react";
 
-export default function Hero({ chromeUrl = "#" }) {
+export default function Hero({ chromeUrl = "/pricing" }) {
   return (
     <section className="relative overflow-hidden container grid lg:grid-cols-2 items-center gap-12 py-20">
       {/* 🌌 Background Glow */}
@@ -38,20 +38,21 @@ export default function Hero({ chromeUrl = "#" }) {
         <div className="mt-8 flex flex-wrap gap-4">
           <a
             href="/pricing"
-            className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-cyan-400 text-black font-semibold shadow-lg hover:shadow-cyan-400/40 transition-all hover:scale-[1.03]"
+            className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-cyan-400 text-white font-semibold shadow-lg hover:shadow-cyan-400/40 transition-all hover:scale-[1.03]"
           >
             <Star size={16} /> Get Focused — ₹199/month
           </a>
 
           <button
             onClick={() => (window.location.href = chromeUrl)}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 backdrop-blur bg-white/5 text-white/90 hover:bg-white/10 transition-all"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/20 backdrop-blur bg-white/5 text-white/90 hover:bg-white/10 transition-all"
           >
-            <DownloadCloud size={16} /> Install Extension
+            <DownloadCloud size={16} className="text-cyan-400" /> Install
+            Extension
           </button>
 
-          <button className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 text-white/70 hover:text-white hover:border-white/20 transition-all">
-            <Play size={14} /> Watch Demo
+          <button className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 text-white/90 hover:text-white hover:border-white/20 transition-all">
+            <Play size={14} className="text-cyan-400" /> Watch Demo
           </button>
         </div>
       </div>

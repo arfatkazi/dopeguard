@@ -2,7 +2,7 @@
 import axios from "axios";
 axios.defaults.withCredentials = true;
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
 export const fetchActivities = (params = {}) =>
   axios.get(`${BACKEND}/api/activity`, { params });

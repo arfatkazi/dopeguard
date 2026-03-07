@@ -28,7 +28,7 @@ export default function Footer() {
         viewport={{ once: true }}
         className="relative z-10 text-center container"
       >
-        <nav className="flex justify-center gap-6 mb-4 text-white/70 text-sm">
+        <nav className="flex justify-center gap-6 mb-4 text-white/90 text-sm">
           <a href="/" className="hover:text-cyan-400 transition-colors">
             Home
           </a>
@@ -40,7 +40,7 @@ export default function Footer() {
           </a>
         </nav>
 
-        <p className="text-white/50 text-sm">
+        <p className="text-white/90 text-sm">
           © {year}{" "}
           <span className="text-cyan-400 font-semibold">DopeGuard</span>. All
           rights reserved.

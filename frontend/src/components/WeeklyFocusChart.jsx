@@ -16,7 +16,7 @@ export default function WeeklyFocusChart({ data = [] }) {
   return (
     <div className="p-4 rounded-2xl bg-white/4 border border-white/10">
       <h4 className="text-white/90 font-semibold mb-2">Weekly Focus</h4>
-      <div style={{ height: 200 }}>
+      <div style={{ height: 300 }}>
         {hasData ? (
           <ResponsiveContainer>
             <AreaChart data={data}>
@@ -26,9 +26,56 @@ export default function WeeklyFocusChart({ data = [] }) {
                   <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.08} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis dataKey="date" tick={{ fill: "#cbd5e1" }} />
-              <YAxis tick={{ fill: "#cbd5e1" }} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#ffffff10"
+                tick={{
+                  fill: "#cbd5e1",
+                  fontSize: 15,
+                  fontWeight: 800,
+                  fontFamily: "Inter",
+                  spacing: "preserve",
+                }}
+              />
+              <XAxis
+                dataKey="date"
+                tick={{
+                  fill: "#cbd5e1",
+                  fontSize: 15,
+                  fontWeight: 800,
+                  fontFamily: "Inter",
+                  spacing: "preserve",
+                  dx: 10,
+                  dy: 10,
+                  rotation: 0,
+                  alignmentBaseline: "after-edge",
+                  textAnchor: "start",
+                  baseline: "after-edge",
+                  mathematical: true,
+                  tickLine: false,
+                  axisLine: false,
+                  tickCount: 5,
+                }}
+                tickCount={5}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{
+                  fill: "#cbd5e1",
+                  fontSize: 15,
+                  fontWeight: 800,
+                  fontFamily: "Inter",
+                  spacing: "preserve",
+                  mathematical: true,
+                  dx: -5,
+                  dy: -2,
+                  tickLine: false,
+                  axisLine: false,
+                  tickCount: 5,
+                }}
+                tickCount={5}
+              />
               <Tooltip
                 contentStyle={{
                   background: "#0b1220",

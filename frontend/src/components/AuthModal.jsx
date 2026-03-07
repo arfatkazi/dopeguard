@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 ====================================================== */
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
 export default function AuthModal({ open, onClose }) {
   const [mode, setMode] = useState("signin");

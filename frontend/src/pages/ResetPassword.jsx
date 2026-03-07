@@ -6,7 +6,7 @@ import { Lock, Eye, EyeOff } from "lucide-react";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");

@@ -4,10 +4,11 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Download, KeyRound, Copy } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
-const API_BASE = import.meta.env.VITE_BACKEND_URL;
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
 export default function Success() {
   const [params] = useSearchParams();
+
   const [details, setDetails] = useState({
     plan: "",
     orderId: "",
@@ -23,10 +24,10 @@ export default function Success() {
   const [downloadingPremium, setDownloadingPremium] = useState(false);
   const [error, setError] = useState("");
 
-  // Helper to download zip files
   const downloadFile = async (path, filename, setLoadingFn) => {
     try {
       setLoadingFn(true);
+
       const res = await axios.get(`${API_BASE}${path}`, {
         withCredentials: true,
         responseType: "blob",
@@ -51,11 +52,11 @@ export default function Success() {
     }
   };
 
-  // Activate Starter key (Essential)
   const fetchStarterKey = async () => {
     try {
       setLoadingKey(true);
       setStarterMessage("");
+
       const res = await axios.post(
         `${API_BASE}/api/extension/starter/activate`,
         {},
@@ -88,7 +89,6 @@ export default function Success() {
     const orderId = params.get("order_id") || localStorage.getItem("order_id");
     const amount = params.get("amount") || localStorage.getItem("amount");
 
-    // Store basic details first
     setDetails((prev) => ({
       ...prev,
       plan,
@@ -98,7 +98,6 @@ export default function Success() {
         : prev.amount || "",
     }));
 
-    // ⚡ Fetch REAL expiry + user info from backend
     axios
       .get(`${API_BASE}/api/auth/verify`, {
         withCredentials: true,
@@ -107,7 +106,6 @@ export default function Success() {
         if (res.data.success) {
           const u = res.data.user || res.data.data?.user || res.data;
 
-          // Save updated user session locally if you want
           localStorage.setItem("user", JSON.stringify(u));
 
           setDetails((prev) => ({
@@ -119,7 +117,6 @@ export default function Success() {
             verified: true,
           }));
 
-          // Try to activate Starter key for this user
           fetchStarterKey();
         } else {
           setDetails((prev) => ({ ...prev, verified: false }));
@@ -129,9 +126,17 @@ export default function Success() {
       .catch((err) => {
         console.error("Verify error:", err);
         setDetails((prev) => ({ ...prev, verified: false }));
-        setError(
-          err?.response?.data?.message || "Could not verify subscription."
-        );
+
+        if (err?.response?.status === 401) {
+          setError(
+            "Your payment was processed, but your login session was not found. Please sign in again."
+          );
+        } else {
+          setError(
+            err?.response?.data?.message || "Could not verify subscription."
+          );
+        }
+
         setLoadingKey(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,6 +163,7 @@ export default function Success() {
             </span>{" "}
             plan has been activated successfully.
           </p>
+
           <p className="text-xs text-white/40 text-center">
             Next step: download your extensions and plug in your Essential key
             inside the Basic extension.
@@ -170,7 +176,6 @@ export default function Success() {
           </div>
         )}
 
-        {/* Order / plan info */}
         <div className="text-sm text-white/75 space-y-2 mb-6">
           <p>
             <span className="text-white font-semibold">Order ID:</span>{" "}
@@ -194,7 +199,6 @@ export default function Success() {
           </p>
         </div>
 
-        {/* Starter key card */}
         <div className="mb-8 rounded-2xl border border-white/15 bg-white/5 p-4">
           <div className="flex items-center gap-2 mb-2">
             <KeyRound className="w-5 h-5 text-cyan-400" />
@@ -202,6 +206,7 @@ export default function Success() {
               DopeGuard Essential – Access Key
             </h2>
           </div>
+
           <p className="text-xs text-white/60 mb-4">
             Use this key inside the{" "}
             <span className="font-semibold">Basic / Essential</span> extension.
@@ -216,6 +221,7 @@ export default function Success() {
                 <div className="font-mono text-xs bg-black/40 px-4 py-2 rounded-xl tracking-[0.3em]">
                   {starterKey}
                 </div>
+
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(starterKey)}
@@ -225,6 +231,7 @@ export default function Success() {
                   Copy
                 </button>
               </div>
+
               <p className="text-[11px] text-white/50">{starterMessage}</p>
             </>
           ) : (
@@ -233,6 +240,7 @@ export default function Success() {
                 {starterMessage ||
                   "Your current plan might not include Essential, or activation failed."}
               </p>
+
               <button
                 type="button"
                 onClick={fetchStarterKey}
@@ -245,7 +253,6 @@ export default function Success() {
           )}
         </div>
 
-        {/* Downloads */}
         <div className="grid gap-4 md:grid-cols-2 mb-6">
           <button
             type="button"
@@ -265,6 +272,7 @@ export default function Success() {
                 Download DopeGuard Essential
               </span>
             </div>
+
             <span className="text-[11px] text-white/55">
               Basic, no-login extension. Controlled via the key above.
             </span>
@@ -288,6 +296,7 @@ export default function Success() {
                 Download DopeGuard Premium
               </span>
             </div>
+
             <span className="text-[11px] text-white/55">
               Full login + dashboard extension. Uses your account directly.
             </span>

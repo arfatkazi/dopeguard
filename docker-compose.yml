@@ -1,6 +1,7 @@
 services:
   mongo:
-    image: mongodb
+
+    image: mongo
     container_name: mongodb
     ports:
       - "27017:27017"
@@ -13,17 +14,34 @@ services:
       - mongo-data:/data/db/
 
     networks:
-      - dopeguard- net
+
+      - dopeguard-net
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet -u root -p password --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 })' || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: always
 
   backend:
     build: ./backend
     container_name: dopeguard-backend
     ports:
-      - "8080:8080"
+
+      - "8080:5000"
+
+    env_file:
+      - ./backend/.env
 
     environment:
       NODE_ENV: development
-      MONGO_URI: mongodb://root:password@mongo:27017/dopeguard
+      MONGO_URI: mongodb://root:password@mongo:27017/dopeguard?authSource=admin
 
     depends_on:
       mongo:
@@ -32,11 +50,20 @@ services:
     networks:
       - dopeguard-net
 
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   frontend:
     build: ./frontend
     container_name: dopeguard-frontend
     ports:
-      - "3000:3000"
+
+      - "3000:80"
 
     depends_on:
       backend:

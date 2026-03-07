@@ -19,7 +19,7 @@ import Upgrade from "./pages/Upgrade.jsx";
 
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL =
-  import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:5000";
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
 /* ⚙️ Neural Boot Loader */
 function Loader() {

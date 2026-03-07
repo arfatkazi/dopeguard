@@ -29,7 +29,7 @@ export default function About() {
           <div className="flex justify-center md:justify-start">
             <a
               href="/pricing"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold shadow-lg hover:shadow-cyan-400/40 hover:scale-[1.03] transition-all"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold shadow-lg hover:shadow-cyan-400/40 hover:scale-[1.03] transition-all"
             >
               Try DopeGuard Now
             </a>

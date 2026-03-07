@@ -104,7 +104,7 @@ export default function PricingSection() {
                 whileHover={{ scale: 1.05 }}
                 className={`w-full py-2.5 rounded-xl font-semibold ${
                   plan.bestValue
-                    ? "bg-gradient-to-r from-purple-400 to-pink-400 text-black"
+                    ? "bg-gradient-to-r from-purple-400 to-pink-400 text-white shadow-lg hover:from-purple-500 hover:to-pink-500"
                     : "bg-white/10 text-white/90 hover:bg-white/20"
                 }`}
               >

@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="bg-dark text-white">
       <ScrollReveal>
-        <Hero chromeUrl="#" />
+        <Hero chromeUrl="/pricing" />
       </ScrollReveal>
 
       <ScrollReveal delay={0.1}>

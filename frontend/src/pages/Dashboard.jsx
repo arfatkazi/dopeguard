@@ -16,6 +16,9 @@ import {
   fetchDopamineSpikes,
 } from "../services/analyticsService.js";
 
+
+
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 const loadSnapshot = (key, fallback) => {
   try {
     const raw = localStorage.getItem(key);
@@ -54,27 +57,30 @@ export default function Dashboard() {
   );
 
   // 🧠 Always fetch latest backend data
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`,
-          { withCredentials: true }
-        );
+ useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const { data } = await axios.get(`${API_BASE}/api/auth/verify`, {
+        withCredentials: true,
+      });
 
-        if (data.success) {
-          setUser(data.user);
-          localStorage.setItem("user", JSON.stringify(data.user)); // sync
-        }
-      } catch (error) {
-        console.error("❌ Failed to fetch user:", error);
-      } finally {
-        setLoading(false);
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
-    };
+    } catch (error) {
+      if (error?.response?.status === 401) {
+        setUser(null);
+      } else {
+        console.error("❌ Failed to fetch user:", error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchUser();
-  }, []);
+  fetchUser();
+}, []);
 
   // Load analytics data after we know the user
   useEffect(() => {
@@ -194,9 +200,8 @@ export default function Dashboard() {
             DopeGuard Dashboard
           </h2>
           <p className="text-white/70 mt-3">
-            Welcome back,{" "}
-            <span className="text-cyan-400 font-semibold">Focus Warrior</span>{" "}
-            👋
+            Welcome back to your{" "}
+            <span className="text-cyan-400 font-semibold">Focus Warrior</span>
           </p>
 
           {user && (
@@ -335,7 +340,9 @@ export default function Dashboard() {
 
         {/* Recent activity */}
         <section className="mt-8">
-          <h3 className="text-white/90 font-semibold mb-4">Recent activity</h3>
+          <h3 className="text-white/90 font-semibold mb-4">
+            Recent activity Block Sites
+          </h3>
           <div className="space-y-3">
             {activities.length === 0 && (
               <div className="text-white/60">No activity yet</div>

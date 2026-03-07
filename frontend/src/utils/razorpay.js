@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 axios.defaults.withCredentials = true;
 
 // ✅ Ensure backend URL is consistent
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:5000"; // ⚡ must match backend origin exactly
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080"; // ⚡ must match backend origin exactly
 
 /**
  * 🧠 DopeGuard Razorpay Payment Handler

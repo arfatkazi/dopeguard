@@ -523,6 +523,7 @@ function shouldActivate() {
     "https://www.instagram.com/",
     "https://www.facebook.com/",
     "https://www.reddit.com/",
+    "instagram",
   ];
   if (riskyDomains.some((word) => new RegExp(`\\b${word}\\b`, "i").test(url))) {
     return true;

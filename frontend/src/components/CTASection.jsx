@@ -27,14 +27,14 @@ export default function CTASection() {
           Take Back Control of Your Focus
         </h2>
 
-        <p className="text-white/70 max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
+        <p className="text-white/90 max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
           Join thousands reclaiming their attention with{" "}
-          <span className="text-cyan-400 font-semibold">DopeGuard</span> — your
-          AI-powered dopamine regulator.
+          <span className="text-cyan-300 font-semibold">DopeGuard AI — </span>{" "}
+          your AI-powered dopamine regulator.
         </p>
 
         <motion.a
-          href="#"
+          href="/pricing"
           whileHover={{
             scale: 1.05,
             boxShadow: "0 0 25px rgba(6,182,212,0.4)",
@@ -42,10 +42,12 @@ export default function CTASection() {
           whileTap={{ scale: 0.98 }}
           className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold text-lg shadow-lg hover:shadow-cyan-400/40 transition-all"
         >
-          <Chrome className="w-5 h-5" /> Add to Chrome
+          <h1 className="flex items-center gap-2 text-white ">
+            Add Dopeguard Extension To Any Browser
+          </h1>
         </motion.a>
 
-        <p className="text-white/50 text-sm mt-5">
+        <p className="text-white/90 text-sm mt-5">
           100% Private · No Sign-up Required · Always Free to Try
         </p>
       </motion.div>

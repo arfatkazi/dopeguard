@@ -192,8 +192,8 @@ app.use((err, req, res, next) => {
 // =============================================================
 // 🚀 Start Server
 // =============================================================
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`⚙️  DopeGuard API running at: http://127.0.0.1:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`⚙️  DopeGuard API running at: http://0.0.0.0:${PORT}`);
   console.log("✅ Server started successfully with Arcjet + Razorpay + Auth");
   console.log(
     "🌍 Allowed Origin:",
