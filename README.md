@@ -110,14 +110,18 @@ Docker
 Docker Compose
 
 Clone the repository
+```bash
 git clone https://github.com/arfatkazi/dopeguard.git
 cd dopeguard
-
+```
 Run the project
+```bash
 docker compose up --build
-
+```
 Stop the project
+```bash
 docker compose down
+```
 
 
 
