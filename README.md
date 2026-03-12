@@ -102,12 +102,14 @@ Getting Started
 Prerequisites
 
 Make sure you have installed:
-
+```bash
 Git
 
 Docker
 
 Docker Compose
+```
+
 
 Clone the repository
 ```bash
