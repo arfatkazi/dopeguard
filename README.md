@@ -81,10 +81,10 @@ The main goals of DopeGuard are:
 
 dopeguard/
 ├── .github/
-│   └── workflows/          # CI/CD workflow files
-├── backend/                # Backend service
-├── frontend/               # Frontend service
-├── docker-compose.yml      # Multi-service orchestration
+│   └── workflows/         
+├── backend/                
+├── frontend/               
+├── docker-compose.yml      
 ├── .dockerignore
 ├── .gitignore
 └── README.md
