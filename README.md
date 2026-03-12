@@ -126,21 +126,30 @@ docker compose down
 ```
 
 Development Workflow
-```bash
+
 Typical workflow for this project:
+```bash
 
-Update frontend or backend code
 
-Rebuild containers
-
+ Update frontend or backend code
+           |
+           v
+     Rebuild containers
+           |
+           v
 Start services using Docker Compose
-
-Validate service connectivity
-
-Extend workflow into CI/CD automation
-
+           |
+           v
+ Validate service connectivity
+           |
+           v
+ Extend workflow into CI/CD automation
+           |
+           v
 Prepare for cloud or VPS deployment
 ```
+
+
 DevOps Highlights
 ```bash
 Containerized full-stack workflow
