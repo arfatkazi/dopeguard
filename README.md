@@ -70,7 +70,7 @@ The main goals of DopeGuard are:
 ---
 
 ## Repository Structure
-
+```bash
 
 dopeguard/
 ├── .github/
@@ -81,7 +81,7 @@ dopeguard/
 ├── .dockerignore
 ├── .gitignore
 └── README.md
-
+```
 
 Architecture
 
