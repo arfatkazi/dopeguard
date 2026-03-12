@@ -130,4 +130,6 @@ docker compose down
 Author
 
 Arfat Kazi
+```bash
 GitHub: arfatkazi
+```
