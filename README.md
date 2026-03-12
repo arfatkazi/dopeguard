@@ -84,7 +84,7 @@ dopeguard/
 ```
 
 Architecture
-
+```bash
 User
   |
   v
@@ -96,7 +96,7 @@ Backend / API
   v
 Application Services / Integrations
 
-
+```
 
 Getting Started
 Prerequisites
@@ -119,88 +119,6 @@ docker compose up --build
 Stop the project
 docker compose down
 
-
-Development Workflow
-
-Typical workflow for this project:
-
-Update frontend or backend code
-
-Rebuild containers
-
-Start services using Docker Compose
-
-Validate service connectivity
-
-Extend workflow into CI/CD automation
-
-Prepare for cloud or VPS deployment
-
-DevOps Highlights
-
-Containerized full-stack workflow
-
-Docker Compose-based orchestration
-
-Service separation for maintainability
-
-CI/CD-ready repository layout
-
-Deployment-oriented project structure
-
-Cloud deployment preparation
-
-Use Cases
-
-DopeGuard can be used as a learning and portfolio project for:
-
-Full-stack application containerization
-
-Docker and Docker Compose practice
-
-CI/CD workflow design
-
-DevOps project organization
-
-Cloud deployment preparation
-
-Secure application delivery workflows
-
-Future Improvements
-
-Planned improvements for DopeGuard include:
-
-Add a complete CI/CD pipeline using GitHub Actions or Jenkins
-
-Add environment-specific configuration handling
-
-Add reverse proxy setup with Nginx
-
-Add production deployment workflow
-
-Add monitoring and logging integration
-
-Improve security hardening and secrets management
-
-Add screenshots, setup notes, and architecture diagrams
-
-Resume / Portfolio Value
-
-This project demonstrates:
-
-Docker
-
-Docker Compose
-
-frontend/backend service structure
-
-CI/CD readiness
-
-deployment workflow design
-
-cloud deployment foundation
-
-practical DevOps project organization
 
 
 Author
