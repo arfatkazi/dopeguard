@@ -132,11 +132,7 @@ Author
 Arfat Kazi
 GitHub: arfatkazi
 ```
+
 License
-
 This project is for learning, portfolio, and demonstration purposes.
-```bash
 
-The main issue is simple: your file currently has **old broken content plus new content together**. The live lines 311–432 prove that duplicate content is still there. :contentReference[oaicite:4]{index=4}
-::contentReference[oaicite:5]{index=5}
-```
