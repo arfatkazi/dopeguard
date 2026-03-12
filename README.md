@@ -191,5 +191,5 @@ GitHub: arfatkazi
 
 
 License
-This project is for learning, portfolio, and demonstration purposes.
+This project is only  for Personal learning, portfolio, and demonstration purposes.
 
