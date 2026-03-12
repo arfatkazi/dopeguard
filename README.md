@@ -62,7 +62,7 @@ The main goals of DopeGuard are:
 
 - Build and manage a **full-stack security-focused application**
 - Practice **containerizing frontend and backend services**
-- Improve **deployment consistency** across environments
+- Improve **deployment consistency** across environments**
 - Create a base for **CI/CD pipeline automation**
 - Prepare the project for **cloud and VPS deployment workflows**
 - Strengthen hands-on DevOps skills using a real project
@@ -81,3 +81,42 @@ dopeguard/
 ├── .dockerignore
 ├── .gitignore
 └── README.md
+
+
+User
+  |
+  v
+Frontend
+  |
+  v
+Backend / API
+  |
+  v
+Application Services / Integrations
+
+
+Getting Started
+Prerequisites
+
+Make sure you have installed:
+
+Git
+
+Docker
+
+Docker Compose
+
+
+
+Clone the repository
+git clone https://github.com/arfatkazi/dopeguard.git
+cd dopeguard
+
+Run the project
+docker compose up --build
+
+
+Stop the project
+docker compose down
+
+
