@@ -71,7 +71,6 @@ The main goals of DopeGuard are:
 
 ## Repository Structure
 
-```bash
 dopeguard/
 ├── .github/
 │   └── workflows/          # CI/CD workflow files
@@ -83,6 +82,7 @@ dopeguard/
 └── README.md
 
 
+## Architecture
 User
   |
   v
@@ -95,7 +95,7 @@ Backend / API
 Application Services / Integrations
 
 
-Getting Started
+## Getting Started
 Prerequisites
 
 Make sure you have installed:
