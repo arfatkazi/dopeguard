@@ -1,3 +1,4 @@
+
 # DopeGuard — Security-Focused Full-Stack Platform
 
 DopeGuard is a security-focused full-stack application built with separate frontend and backend services, containerized using Docker and Docker Compose for consistent development and deployment workflows.
@@ -83,6 +84,8 @@ dopeguard/
 
 
 ## Architecture
+
+
 User
   |
   v
@@ -93,7 +96,6 @@ Backend / API
   |
   v
 Application Services / Integrations
-
 
 ## Getting Started
 Prerequisites
