@@ -125,6 +125,53 @@ Stop the project
 docker compose down
 ```
 
+Development Workflow
+```bash
+Typical workflow for this project:
+
+Update frontend or backend code
+
+Rebuild containers
+
+Start services using Docker Compose
+
+Validate service connectivity
+
+Extend workflow into CI/CD automation
+
+Prepare for cloud or VPS deployment
+```
+DevOps Highlights
+```bash
+Containerized full-stack workflow
+
+Docker Compose-based orchestration
+
+Service separation for maintainability
+
+CI/CD-ready repository layout
+
+Deployment-oriented project structure
+
+Cloud deployment preparation
+```
+
+Use Cases
+
+DopeGuard can be used as a learning and portfolio project for:
+```bash
+Full-stack application containerization
+
+Docker and Docker Compose practice
+
+CI/CD workflow design
+
+DevOps project organization
+
+Cloud deployment preparation
+
+Secure application delivery workflows
+```
 
 
 Author
@@ -132,6 +179,7 @@ Author
 Arfat Kazi
 GitHub: arfatkazi
 ```
+
 
 License
 This project is for learning, portfolio, and demonstration purposes.
