@@ -40,20 +40,27 @@ The project is built not only as an application, but also as a hands-on DevOps c
 
 ## Tech Stack
 
+## Tech Stack
+
 ### Frontend
+- React
 - JavaScript
 - HTML
 - CSS
 
 ### Backend
-- Backend service and API logic
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
 
 ### DevOps / Deployment
 - Docker
 - Docker Compose
 - GitHub Actions
-- CI/CD workflow foundation
-
+- Kubernetes
+- Helm
+- AWS
 ---
 
 ## Project Goals
