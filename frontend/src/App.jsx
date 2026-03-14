@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Lenis from "lenis";
 import "./App.css";
 import "./index.css";
@@ -57,7 +57,7 @@ export default function App() {
   const location = useLocation();
   const lenis = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [user, setUser] = useState(null);
+  const [, setUser] = useState(null);
 
   /* Restore session from Cookie JWT automatically */
   useEffect(() => {
