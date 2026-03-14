@@ -30,7 +30,7 @@ services:
     restart: always
 
   backend:
-    build: ./backend
+    image: ${BACKEND_IMAGE}
     container_name: dopeguard-backend
     ports:
 
@@ -59,7 +59,7 @@ services:
       start_period: 30s
 
   frontend:
-    build: ./frontend
+    image: ${FRONTEND_IMAGE}
     container_name: dopeguard-frontend
     ports:
 

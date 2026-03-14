@@ -7,22 +7,21 @@ on:
     branches: ["main"]
 
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment"
-        required: true
-        default: "dev"
-        type: choice
-        options:
-          - "dev"
-          - "test"
-          - "prod"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
 
 jobs:
   frontend:
-    name: Frontend Build
+    name: Frontend CI
     runs-on: ubuntu-latest
-    needs: backend
     defaults:
       run:
         working-directory: ./frontend
@@ -34,18 +33,24 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Lint Frontend
+        run: npm run lint --if-present
+
+      - name: Test frontend
+        run: npm test --if-present
 
       - name: Build frontend
         run: npm run build
 
   backend:
-    name: Backend build
+    name: Backend CI
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -74,12 +79,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: ./backend/package-lock.json
 
       - name: Install backend dependencies
         run: npm ci
+
+      - name: Lint backend
+        run: npm run lint --if-present
+
+      - name: Run backend tests
+        run: npm test --if-present
 
       - name: Create backend env file
         run: |
@@ -93,11 +104,16 @@ jobs:
 
       - name: Start backend
         run: |
-          npm start &
+          npm start > backend.log 2>&1 &
           sleep 20
 
       - name: Check backend health
-        run: curl -f http://127.0.0.1:5000/ || exit 1
+        run: |
+          curl -f  http://127.0.0.1:5000/ || exit 1
+
+      - name: Show backend logs
+        if: failure()
+        run: cat backend.log
 
   docker:
     name: Docker Build Check
