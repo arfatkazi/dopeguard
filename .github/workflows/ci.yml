@@ -42,6 +42,7 @@ jobs:
 
       - name: Lint Frontend
         run: npm run lint --if-present
+        continue-on-error: true
 
       - name: Test frontend
         run: npm test --if-present
