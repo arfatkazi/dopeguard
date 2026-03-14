@@ -57,7 +57,7 @@ export default function App() {
   const location = useLocation();
   const lenis = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [, setUser] = useState(null);
+  const [user, setUser] = useState(null);
 
   /* Restore session from Cookie JWT automatically */
   useEffect(() => {

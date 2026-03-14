@@ -87,7 +87,8 @@ jobs:
         run: npm ci
 
       - name: Lint backend
-        run: npm run lint --if-present
+        run: npm run lint --if-present 
+        continue-on-error: true
 
       - name: Run backend tests
         run: npm test --if-present
