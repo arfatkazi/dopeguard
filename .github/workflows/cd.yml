@@ -90,22 +90,21 @@ jobs:
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-
             set -e
 
-            cd " ${{ vars.DEPLY_PATH }} "
+            cd "${{ vars.DEPLOY_PATH }}"
 
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor}}" --password-stdin
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-            docker pull ${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.image_tag}}
-            docker pull ${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.image_tag}}
+            docker pull ${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}
+            docker pull ${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}
 
             export BACKEND_IMAGE="${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
             export FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
 
             docker compose down
-            docker compose up -d 
+            docker compose up -d
 
             docker image prune -af
-            
+
             curl -f "${{ vars.APP_HEALTHCHECK_URL }}"
